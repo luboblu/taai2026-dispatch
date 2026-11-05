@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
 <title>TAAI 2026 派工表</title>
 <style>
 /* 版面：左側固定導覽，右側是工具列與資料表。中性灰階、細線分隔、小圓角，色彩只用在狀態。 */
@@ -225,6 +226,17 @@ dialog h3{font-size:15px;font-weight:600}
 .note-view{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;max-width:70ch}
 
 #toast{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:20;background:var(--ink);color:var(--ink-fg);padding:7px 12px;border-radius:6px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.22);max-width:calc(100vw - 32px)}
+.banner.info{border-color:var(--line2);color:var(--fg);display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.banner.info span{flex:1 1 240px}
+.note-head{display:flex;gap:8px;align-items:center;justify-content:space-between;min-height:26px}
+.cf-diff{margin:0;padding:0 0 0 18px;display:grid;gap:3px;font-size:13px;max-height:220px;overflow-y:auto;overflow-wrap:anywhere}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.sk{display:block;height:12px;border-radius:3px;background:var(--surface2);animation:sk 1.4s ease-in-out infinite}
+.sk-title{height:20px;width:130px}
+.sk-row{display:grid;grid-template-columns:1.2fr 1fr 1.6fr .4fr;gap:20px;padding:13px 12px;border-bottom:1px solid var(--line)}
+.sk-row:last-child{border-bottom:0}
+@keyframes sk{50%{opacity:.5}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
 .ro .edit-only{display:none!important}
 
 @media (max-width:860px){
@@ -370,6 +382,19 @@ dialog h3{font-size:15px;font-weight:600}
   </div>
 </form></dialog>
 
+<dialog id="dlgConflict"><form method="dialog" id="formConflict">
+  <h3>線上有較新的版本</h3>
+  <p class="tip" id="cfText"></p>
+  <ul class="cf-diff" id="cfDiff"></ul>
+  <p class="tip">選擇載入線上版後，你的版本仍會保留在這個瀏覽器，可以再還原。</p>
+  <div class="row-end">
+    <button type="button" id="cfCancel">取消</button>
+    <span class="spacer"></span>
+    <button type="button" id="cfMine">用我的版本覆蓋</button>
+    <button type="button" class="primary" id="cfOnline">載入線上版</button>
+  </div>
+</form></dialog>
+
 <dialog id="dlgRoles"><form method="dialog" id="formRoles">
   <h3 id="dlgRolesTitle">場次職務欄位</h3>
   <p class="tip">這裡的職務會出現在此區域的每個場次下，例如「隨車人員」。刪除職務會一併清除已填的人員。</p>
@@ -399,7 +424,7 @@ const BASE_ROOMS=ROOMS.map(r=>({...r}));
 const DAYS=[{k:"d1",name:"第 1 天 · 11/20（五）",short:"11/20（五）"},{k:"d2",name:"第 2 天 · 11/21（六）",short:"11/21（六）"},{k:"x",name:"會前／會後",short:"會前／會後"}];
 const STATUS=["未通知","已通知","已確認"];
 const DEFAULT_ROLES={bus:["隨車人員"]};
-const DEFAULT_LEADS={main:"",A:"國際學院助理",B:"Bob",C:"Queena",D:"花生",P:"陳孝宗",reg:"思因",all:""};
+const DEFAULT_LEADS={main:"",A:"",B:"",C:"",D:"",P:"",reg:"",all:""};
 const V1_ROLE_NAMES=["負責人","協助人員","主持人","場控","設備","評審"];
 // 依官網暫定議程（2026-11-05 擷取）：[廳別, 日期, 開始, 結束, 名稱, 補充]
 const PRESET=[
@@ -488,11 +513,11 @@ function detectRepo(){
   return {owner:m[1],repo:seg&&!seg.includes(".")?seg:m[1]+".github.io"};
 }
 const REPO=detectRepo();
-const mode={hosted:!!REPO,canEdit:!REPO,token:null,remoteText:null,publishing:false};
+const mode={hosted:!!REPO,canEdit:!REPO,token:null,remoteText:null,publishing:false,loadState:REPO?"loading":"ready",pendingLocal:null,remoteNewer:false};
 let storageOK=true,state;
 try{const raw=REPO?null:localStorage.getItem(KEY);const p=raw?JSON.parse(raw):null;state=valid(p)?normalize(p):freshState()}
 catch(e){storageOK=false;state=freshState()}
-const ui={view:"overview",room:"main",jobFilter:"all",jobArea:"",areaFilter:"all",peopleQ:"",openPeople:new Set(),message:null,msgErr:false};
+const ui={view:"overview",room:"main",jobFilter:"all",jobArea:"",areaFilter:"all",peopleQ:"",openPeople:new Set(),canRestore:false,message:null,msgErr:false};
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -512,6 +537,7 @@ function publishable(s){
 function fmtTime(iso){const d=new Date(iso);if(isNaN(d))return "";const p=x=>String(x).padStart(2,"0");return p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())}
 function setHostedStatus(){
   if(!mode.hosted)return;
+  if(mode.loadState!=="ready"){$("saved").textContent="";$("btnPublish").hidden=true;return}
   const el=$("saved"),when=state.updatedAt?fmtTime(state.updatedAt):"";
   if(!mode.canEdit){el.textContent=when?"最後更新 "+when:"";el.className="saved";return}
   const dirty=publishable(state)!==mode.remoteText;
@@ -521,7 +547,7 @@ function setHostedStatus(){
   $("btnPublish").disabled=mode.publishing;
 }
 function saveNow(){
-  if(!mode.canEdit)return;
+  if(!mode.canEdit||mode.pendingLocal)return;
   try{
     localStorage.setItem(KEY,JSON.stringify(state));
     storageOK=true;
@@ -651,14 +677,15 @@ function statusHtml(kind,key,val,hasPeople){
   return '<span class="status s'+i+'"><select id="st-'+esc(kind)+"-"+esc(key)+'" aria-label="通知狀態" data-stkind="'+esc(kind)+'" data-stkey="'+esc(key)+'">'+STATUS.map(x=>"<option"+(x===STATUS[i]?" selected":"")+">"+x+"</option>").join("")+"</select></span>";
 }
 function renderTabs(){
-  const open=state.jobs.filter(j=>!names(j.people).length).length,bad=mode.canEdit?CTX.bad.size:0;
+  const ready=mode.loadState==="ready";
+  const open=ready?state.jobs.filter(j=>!names(j.people).length).length:0,bad=ready&&mode.canEdit?CTX.bad.size:0;
   const inRoom=ui.view==="room"&&ROOMS.some(r=>r.k===ui.room);
   const cur=inRoom?"room":["jobs","people","notes"].includes(ui.view)?ui.view:"overview";
   const count=(n,cls)=>n?'<span class="counter'+(cls?" "+cls:"")+'">'+n+"</span>":"";
   const items=[["overview","各區負責人",""],["jobs","工作",count(open)],["people","人員",count(bad,"bad")],["notes","備註",""]];
   $("sideNav").innerHTML=items.map(([v,l,c])=>'<button type="button" class="nav-item'+(cur===v?" on":"")+'" data-tab="'+v+'"><span>'+l+"</span>"+c+"</button>").join("");
   $("sideAreas").innerHTML=ROOMS.map(r=>{
-    const p=areaProgress(r.k),gap=p.need-p.done;
+    const p=areaProgress(r.k),gap=ready?p.need-p.done:0;
     return '<button type="button" class="nav-item'+(inRoom&&ui.room===r.k?" on":"")+'" data-open-room="'+esc(r.k)+'"><span>'+esc(r.name)+"</span>"+(gap?'<span class="open-dot" title="有 '+gap+' 項未指派"></span>':"")+"</button>";
   }).join("");
   $("tabs").innerHTML=items.map(([v,l,c])=>'<button type="button" class="'+(cur===v||(v==="overview"&&cur==="room")?"on":"")+'" data-tab="'+v+'">'+l+(c?" "+c:"")+"</button>").join("");
@@ -669,6 +696,8 @@ function renderTabs(){
 function banners(){
   let h="";
   if(ui.message&&ui.msgErr)h+='<div class="banner" role="alert">'+esc(ui.message)+"</div>";
+  if(ui.canRestore&&mode.canEdit)h+='<div class="banner info" role="status"><span>已載入線上版，你原本的版本還保留在這個瀏覽器。</span><button type="button" data-restore="1">還原我的版本</button><button type="button" class="ghost" data-restore-close="1">關閉</button></div>';
+  if(mode.remoteNewer&&mode.canEdit)h+='<div class="banner info" role="status"><span>線上有較新的版本，發布時會請你確認。</span></div>';
   if(!storageOK)h+='<div class="banner" role="alert">這個瀏覽器無法自動儲存，關閉前請用「匯出」裡的備份保存資料。</div>';
   return h;
 }
@@ -715,7 +744,7 @@ function renderJobs(){
 function renderNotes(){
   let h=banners()+'<div class="page-head"><h2>備註</h2></div>';
   if(mode.canEdit){
-    h+='<div class="notes-grid"><section class="note-box"><h3>公開備註</h3><p class="tip">'+(mode.hosted?"發布後所有人都看得到，請勿填寫電話或其他個資。":"匯出 Excel 時會一起帶出。")+'</p><textarea id="noteShared" data-board="notes" aria-label="公開備註" placeholder="輸入備註">'+esc(state.notes)+"</textarea></section>"
+    h+='<div class="notes-grid"><section class="note-box"><div class="note-head"><h3>公開備註</h3>'+(state.notes.trim()?'<button type="button" class="ghost" id="moveNotes">移到我的筆記</button>':"")+'</div><p class="tip">'+(mode.hosted?"發布後所有人都看得到，請勿填寫電話或其他個資。":"匯出 Excel 時會一起帶出。")+'</p><textarea id="noteShared" data-board="notes" aria-label="公開備註" placeholder="輸入備註">'+esc(state.notes)+"</textarea></section>"
       +'<section class="note-box"><h3>我的筆記</h3><p class="tip">不會發布，也不會匯出，只存在這個瀏覽器。</p><textarea id="notePrivate" data-board="privateNotes" aria-label="我的筆記" placeholder="輸入筆記">'+esc(state.privateNotes)+"</textarea></section></div>";
   }else h+=state.notes.trim()?'<section class="note-view">'+esc(state.notes)+"</section>":'<section class="blank"><p>目前沒有備註。</p></section>';
   $("main").innerHTML=h;
@@ -910,9 +939,23 @@ function toast(msg){
   const t=$("toast");t.textContent=msg;t.hidden=false;
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true},3600);
 }
+function renderLoading(){
+  const row='<div class="sk-row"><span class="sk"></span><span class="sk"></span><span class="sk"></span><span class="sk"></span></div>';
+  $("main").innerHTML='<div class="page-head"><span class="sk sk-title"></span></div><div role="status"><span class="sr">載入中</span><div class="tbl-wrap" aria-hidden="true">'+row.repeat(8)+"</div></div>";
+}
+function renderLoadError(){
+  $("main").innerHTML='<section class="blank" role="alert"><p>讀不到線上資料，請確認網路後再試一次。</p><button type="button" data-retry="1">重新載入</button></section>';
+}
 function render(){
   syncRooms();
   const map=allTasks();CTX={tasks:map,bad:conflictInfo(map)};
+  $("menu").hidden=mode.loadState!=="ready";
+  if(mode.loadState!=="ready"){
+    rendering=true;
+    try{renderTabs();if(mode.loadState==="error")renderLoadError();else renderLoading()}finally{rendering=false}
+    applyMode();
+    return;
+  }
   rendering=true;
   try{
     renderTabs();
@@ -1067,6 +1110,15 @@ $("main").addEventListener("click",e=>{
   if(d.stat==="room"){go("room",d.statRoom);return}
   if(d.stat==="jobs"){ui.jobFilter="open";ui.jobArea="";go("jobs");return}
   if(d.stat==="people"){go("people");return}
+  if(d.retry){mode.loadState="loading";render();loadHosted();return}
+  if(d.restore){restoreReplaced();return}
+  if(d.restoreClose){ui.canRestore=false;refresh();return}
+  if(b.id==="moveNotes"){
+    state.privateNotes=[state.privateNotes.trim(),state.notes.trim()].filter(Boolean).join("\n\n");
+    state.notes="";save();
+    ui.message=mode.hosted?"已移到我的筆記。按「發布」後，公開頁面就不會再顯示。":"已移到我的筆記。";ui.msgErr=false;
+    refresh();return;
+  }
   if(d.addarea){openArea(null);return}
   if(d.editarea){openArea(d.editarea);return}
   if(d.addjob){openJob(null,{link:d.link,room:d.jobRoom});return}
@@ -1363,24 +1415,121 @@ async function fetchRemote(){
   if(!valid(p))throw new Error("format");
   return p;
 }
+const BASE_KEY=KEY+"-base",REPLACED_KEY=KEY+"-replaced";
 function adoptRemote(remote){
   const at=remote.updatedAt;
   const s=normalize(remote);s.updatedAt=at;
   mode.remoteText=publishable(s);
   return s;
 }
-function mergeLocal(remoteState){
-  let local=null;
-  try{const raw=localStorage.getItem(KEY);local=raw?JSON.parse(raw):null}catch(e){}
-  if(!valid(local))return remoteState;
-  local=normalize(local);
-  if(local.updatedAt===remoteState.updatedAt)return local;
-  if(publishable(local)!==mode.remoteText){
-    try{localStorage.setItem(KEY+"-replaced",JSON.stringify(local))}catch(e){}
+function rememberBase(){try{localStorage.setItem(BASE_KEY,mode.remoteText||"")}catch(e){}}
+function readStored(key){
+  try{
+    const raw=localStorage.getItem(key),l=raw?JSON.parse(raw):null;
+    return valid(l)?normalize(l):null;
+  }catch(e){return null}
+}
+function carryPrivate(from,to){
+  to.privateNotes=from.privateNotes||"";
+  for(const n in from.people){
+    const c=from.people[n]&&from.people[n].contact;
+    if(c&&to.people[n])to.people[n].contact=c;
   }
-  remoteState.privateNotes=local.privateNotes||"";
-  for(const n in local.people){const c=local.people[n]&&local.people[n].contact;if(c){remoteState.people[n]=remoteState.people[n]||{};remoteState.people[n].contact=c}}
-  return remoteState;
+}
+// 決定要用這個瀏覽器的版本還是線上版；有未發布的修改時，不會自動取代
+function resolveLocal(remote){
+  const local=readStored(KEY);
+  if(!local)return {state:remote};
+  if(local.updatedAt===remote.updatedAt)return {state:local};
+  const text=publishable(local);
+  let base=null;try{base=localStorage.getItem(BASE_KEY)}catch(e){}
+  // GitHub Pages 還沒更新完：剛發布的版本比網址讀到的新
+  if(local.updatedAt&&remote.updatedAt&&local.updatedAt>remote.updatedAt){
+    if(base===text)mode.remoteText=text;
+    return {state:local};
+  }
+  carryPrivate(local,remote);
+  if(text===mode.remoteText||(base!==null&&text===base))return {state:remote};
+  return {state:remote,conflict:local};
+}
+function diffLines(local,remote){
+  const out=[],fmt=v=>{const n=names(v);return n.length?n.join("、"):(isNA(v)?"不需要":"未指派")};
+  const label=k=>{
+    const o=(remote.areaOverrides&&remote.areaOverrides[k])||(local.areaOverrides&&local.areaOverrides[k]);
+    if(o&&o.name)return o.name;
+    const a=[...(remote.areas||[]),...(local.areas||[])].find(x=>x.k===k);
+    if(a)return a.name;
+    const b=BASE_ROOMS.find(x=>x.k===k);
+    return b?b.name:k;
+  };
+  for(const k of new Set([...Object.keys(local.leads||{}),...Object.keys(remote.leads||{})])){
+    const a=fmt(local.leads[k]),b=fmt(remote.leads[k]);
+    if(a!==b)out.push(label(k)+" 負責人：線上「"+b+"」，這台「"+a+"」");
+  }
+  const lj=new Map(local.jobs.map(j=>[j.id,j])),rj=new Map(remote.jobs.map(j=>[j.id,j]));
+  for(const [id,j] of rj)if(!lj.has(id))out.push("工作「"+j.title+"」只在線上版");
+  for(const [id,j] of lj){
+    const r=rj.get(id);
+    if(!r){out.push("工作「"+j.title+"」只在這台");continue}
+    if(fmt(j.people)!==fmt(r.people))out.push("工作「"+j.title+"」：線上「"+fmt(r.people)+"」，這台「"+fmt(j.people)+"」");
+    else if(j.title!==r.title||j.linkId!==r.linkId||j.note!==r.note||j.start!==r.start||j.end!==r.end)out.push("工作「"+j.title+"」內容不同");
+  }
+  const ls=new Map(local.sessions.map(s=>[s.id,s])),rs=new Map(remote.sessions.map(s=>[s.id,s]));
+  for(const [id,s] of rs){
+    const m=ls.get(id);
+    if(!m){out.push("場次「"+s.title+"」只在線上版");continue}
+    if(s.title!==m.title||s.start!==m.start||s.end!==m.end||s.day!==m.day||s.room!==m.room||s.note!==m.note){out.push("場次「"+s.title+"」內容不同");continue}
+    for(const r of new Set([...Object.keys(s.assign),...Object.keys(m.assign)])){
+      const a=fmt(m.assign[r]),b=fmt(s.assign[r]);
+      if(a!==b)out.push(s.title+"（"+dayOf(s.day).short+"）：線上「"+b+"」，這台「"+a+"」");
+    }
+  }
+  for(const [id,s] of ls)if(!rs.has(id))out.push("場次「"+s.title+"」只在這台");
+  if((local.notes||"")!==(remote.notes||""))out.push("公開備註內容不同");
+  if(JSON.stringify(local.areas)!==JSON.stringify(remote.areas)||JSON.stringify(local.areaOverrides)!==JSON.stringify(remote.areaOverrides))out.push("區域設定不同");
+  if(!out.length)out.push("通知狀態或人員組別不同");
+  return out;
+}
+let cfg=null;
+function openConflict(kind,remote,local){
+  cfg={kind,remote,local};
+  const when=remote.updatedAt?fmtTime(remote.updatedAt):"剛才";
+  $("cfText").textContent=kind==="load"
+    ?"這個瀏覽器有尚未發布的修改，但線上版已在 "+when+" 更新。請選擇要使用哪一份。"
+    :"你開始編輯後，線上版在 "+when+" 更新過。直接發布會蓋掉那些內容。";
+  const lines=diffLines(local,remote);
+  $("cfDiff").innerHTML=lines.slice(0,8).map(x=>"<li>"+esc(x)+"</li>").join("")+(lines.length>8?"<li>還有 "+(lines.length-8)+" 項差異</li>":"");
+  $("cfCancel").hidden=kind==="load";
+  $("cfMine").textContent=kind==="load"?"保留我的版本":"用我的版本覆蓋";
+  if(kind==="load")mode.pendingLocal=local;
+  $("dlgConflict").showModal();
+}
+$("dlgConflict").addEventListener("cancel",e=>{if(cfg&&cfg.kind==="load")e.preventDefault()});
+$("cfCancel").addEventListener("click",()=>{cfg=null;$("dlgConflict").close()});
+$("cfOnline").addEventListener("click",()=>{
+  if(!cfg)return;
+  const {remote,local}=cfg;
+  try{localStorage.setItem(REPLACED_KEY,JSON.stringify(local))}catch(e){}
+  const s=adoptRemote(remote);carryPrivate(local,s);state=s;
+  mode.pendingLocal=null;mode.remoteNewer=false;cfg=null;ui.canRestore=true;
+  rememberBase();saveNow();$("dlgConflict").close();refresh();
+});
+$("cfMine").addEventListener("click",()=>{
+  if(!cfg)return;
+  const {kind,remote,local}=cfg;
+  cfg=null;$("dlgConflict").close();
+  if(kind==="load"){
+    mode.pendingLocal=null;
+    local.updatedAt=remote.updatedAt;state=local;
+    rememberBase();saveNow();refresh();
+    toast("已保留你的版本。之後按「發布」會取代線上版。");
+  }else publish(true);
+});
+function restoreReplaced(){
+  const s=readStored(REPLACED_KEY);
+  if(!s){toast("找不到先前的版本。");ui.canRestore=false;refresh();return}
+  state=s;mode.remoteText=null;ui.canRestore=false;mode.remoteNewer=false;saveNow();refresh();
+  toast("已還原你的版本，尚未發布。");
 }
 const noWriteMessage=()=>"這個 token 沒有寫入權限。請到 GitHub 的 token 設定，把 "+REPO.repo+" 加進 Repository access，並把 Contents 設為 Read and write，儲存後再試一次。";
 async function checkToken(){
@@ -1394,14 +1543,39 @@ async function checkToken(){
   return probe.status===403?"nowrite":"ok";
 }
 async function loadHosted(){
+  let conflict=null;
   try{
     const remote=adoptRemote(await fetchRemote());
-    state=mode.canEdit?mergeLocal(remote):remote;
+    if(mode.canEdit){
+      const r=resolveLocal(remote);
+      state=r.state;conflict=r.conflict||null;
+      if(!conflict){rememberBase();saveNow()}
+    }else state=remote;
+    mode.loadState="ready";
   }catch(e){
-    ui.message="讀不到最新資料，目前顯示的是預設內容。請稍後重新整理。";ui.msgErr=true;
-    if(mode.canEdit){try{const l=JSON.parse(localStorage.getItem(KEY)||"null");if(valid(l))state=normalize(l)}catch(err){}}
+    const local=mode.canEdit?readStored(KEY):null;
+    if(local){
+      state=local;mode.loadState="ready";
+      ui.message="讀不到線上資料，目前顯示這個瀏覽器保存的版本。";ui.msgErr=true;
+    }else mode.loadState="error";
   }
   render();
+  if(conflict)openConflict("load",state,conflict);
+}
+async function pollRemote(){
+  if(mode.publishing||mode.pendingLocal)return;
+  if(mode.loadState!=="ready"){await loadHosted();return}
+  let p;try{p=await fetchRemote()}catch(e){return}
+  if(!p.updatedAt||(state.updatedAt&&p.updatedAt<=state.updatedAt))return;
+  if(!mode.canEdit){state=adoptRemote(p);refresh();return}
+  if(publishable(state)===mode.remoteText){
+    const s=adoptRemote(p);carryPrivate(state,s);state=s;
+    mode.remoteNewer=false;rememberBase();saveNow();refresh();
+    toast("已載入線上最新版。");
+  }else if(!mode.remoteNewer){
+    mode.remoteNewer=true;
+    toast("線上有較新的版本，發布時會請你確認。");
+  }
 }
 async function boot(){
   if(!REPO)return;
@@ -1415,33 +1589,51 @@ async function boot(){
     }
   }
   await loadHosted();
-  setInterval(async()=>{
-    if(mode.canEdit||document.hidden)return;
-    try{const p=await fetchRemote();if(p.updatedAt!==state.updatedAt){state=adoptRemote(p);render()}}catch(e){}
-  },60000);
+  setInterval(()=>{if(!document.hidden)pollRemote()},60000);
 }
 function toB64(text){
   const b=new TextEncoder().encode(text);let s="";
   for(let i=0;i<b.length;i+=8192)s+=String.fromCharCode(...b.subarray(i,i+8192));
   return btoa(s);
 }
-$("btnPublish").addEventListener("click",async()=>{
+function fromB64(c){
+  const bin=atob(String(c).replace(/\s/g,""));
+  return new TextDecoder().decode(Uint8Array.from(bin,x=>x.charCodeAt(0)));
+}
+async function publish(force){
+  if(mode.publishing)return;
   mode.publishing=true;$("btnPublish").textContent="發布中";setHostedStatus();
+  let conflict=null;
   try{
-    const head=await fetch(contentsUrl()+"?t="+Date.now(),{headers:ghHeaders()});
+    const head=await fetch(contentsUrl()+"?t="+Date.now(),{headers:ghHeaders(),cache:"no-store"});
     if(head.status!==200&&head.status!==404)throw new Error("status "+head.status);
-    const sha=head.status===200?(await head.json()).sha:undefined;
-    const body=publishable(state),at=new Date().toISOString(),obj=JSON.parse(body);obj.updatedAt=at;
-    const put=await fetch(contentsUrl(),{method:"PUT",headers:{...ghHeaders(),"Content-Type":"application/json"},body:JSON.stringify({message:"更新派工表",content:toB64(JSON.stringify(obj,null,1)),...(sha?{sha}:{})})});
-    if(!put.ok)throw new Error("status "+put.status);
-    state.updatedAt=at;mode.remoteText=body;saveNow();
-    ui.message="已發布，約 1 分鐘後生效。";ui.msgErr=false;
+    let sha;
+    if(head.status===200){
+      const j=await head.json();sha=j.sha;
+      if(!force&&j.content){
+        const remote=JSON.parse(fromB64(j.content));
+        if(valid(remote)&&remote.updatedAt!==state.updatedAt){
+          const n=normalize(remote);
+          if(publishable(n)!==mode.remoteText)conflict=n;
+        }
+      }
+    }
+    if(!conflict){
+      const body=publishable(state),at=new Date().toISOString(),obj=JSON.parse(body);obj.updatedAt=at;
+      const put=await fetch(contentsUrl(),{method:"PUT",headers:{...ghHeaders(),"Content-Type":"application/json"},body:JSON.stringify({message:"更新派工表",content:toB64(JSON.stringify(obj,null,1)),...(sha?{sha}:{})})});
+      if(!put.ok)throw new Error("status "+put.status);
+      state.updatedAt=at;mode.remoteText=body;mode.remoteNewer=false;ui.canRestore=false;
+      rememberBase();saveNow();
+      ui.message="已發布，約 1 分鐘後生效。";ui.msgErr=false;
+    }
   }catch(e){
     const m=String(e.message||"");
-    ui.message=/403/.test(m)?"發布失敗："+noWriteMessage():/401/.test(m)?"發布失敗：token 已失效或過期，請登出後用新的 token 登入。":/409|422/.test(m)?"發布失敗：GitHub 上的資料剛更新過，請再按一次發布。":"發布失敗，內容還保留在這個瀏覽器。請確認網路後再試。";ui.msgErr=true;
+    ui.message=/403/.test(m)?"發布失敗："+noWriteMessage():/401/.test(m)?"發布失敗：token 已失效或過期，請登出後用新的 token 登入。":/409|422/.test(m)?"發布失敗：線上版剛好更新了。請再按一次發布，系統會請你確認。":"發布失敗，內容還保留在這個瀏覽器。請確認網路後再試。";ui.msgErr=true;
   }
-  mode.publishing=false;$("btnPublish").textContent="發布";render();
-});
+  mode.publishing=false;$("btnPublish").textContent="發布";refresh();
+  if(conflict)openConflict("publish",conflict,state);
+}
+$("btnPublish").addEventListener("click",()=>publish(false));
 document.addEventListener("click",e=>{document.querySelectorAll("details.menu[open]").forEach(m=>{if(!m.contains(e.target)||e.target.closest(".menu-list"))m.open=false})});
 $("btnLogin").addEventListener("click",async()=>{
   if(mode.canEdit){
@@ -1465,7 +1657,7 @@ $("formLogin").addEventListener("submit",async e=>{
   mode.canEdit=true;$("fToken").value="";$("dlgLogin").close();
   await loadHosted();
 });
-window.TAAI={buildXlsx,flatRows,peopleRows,csvText,getState:()=>state,mode,publishable};
+window.TAAI={buildXlsx,flatRows,peopleRows,csvText,getState:()=>state,mode,publishable,pollRemote};
 parseHash();
 render();
 boot();
