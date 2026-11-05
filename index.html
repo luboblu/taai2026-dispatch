@@ -113,6 +113,10 @@ dialog form{display:grid;gap:12px}
 .role-row{display:flex;gap:6px}
 .role-row input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
 .card-jobs{font-size:13px;color:var(--muted)}
+.note-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:8px}
+.note-box h3{margin:0;font-size:15px;color:var(--fg)}
+.note-box textarea{min-height:190px;resize:vertical;font-size:15px;line-height:1.6;background:var(--bg);border-color:transparent}
+.note-view{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}
 .job-line{display:block;margin-top:4px;font-size:13px}
 button.job-line{border:0;padding:0;text-align:left;background:none;color:var(--accent)}
 button.job-line:hover{background:none;text-decoration:underline}
@@ -270,7 +274,7 @@ const busSessions=()=>BUS.map((b,i)=>({id:"bus"+i,room:"bus",day:b[0],start:b[1]
 function freshState(){
   let n=0;const roles={};
   for(const k in DEFAULT_ROLES) roles[k]=DEFAULT_ROLES[k].map(name=>({id:"r"+(++n),name}));
-  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},jobs:[],sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
+  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},jobs:[],notes:"",privateNotes:"",sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
 }
 function valid(s){return s&&typeof s==="object"&&Array.isArray(s.sessions)&&s.roles&&typeof s.roles==="object"}
 // 舊版資料：已填的人員全部保留，只移除沒填過的預設職務欄
@@ -297,6 +301,7 @@ function normalize(s){
   s.leads=s.leads&&typeof s.leads==="object"?s.leads:{};
   s.leadStatus=s.leadStatus&&typeof s.leadStatus==="object"?s.leadStatus:{};
   s.nextId=Number(s.nextId)||5000;
+  s.notes=String(s.notes||"");s.privateNotes=String(s.privateNotes||"");
   s.jobs=(Array.isArray(s.jobs)?s.jobs:[]).filter(j=>j&&typeof j==="object"&&j.id);
   s.jobs.forEach(j=>{j.title=String(j.title||"");j.people=String(j.people||"");j.note=String(j.note||"");if(!STATUS.includes(j.status))j.status=STATUS[0]});
   ROOMS.forEach(r=>{if(!Array.isArray(s.roles[r.k]))s.roles[r.k]=[]});
@@ -331,7 +336,7 @@ let saveTimer;
 function publishable(s){
   const people={};
   for(const n in s.people){const g=s.people[n]&&s.people[n].group;people[n]=g?{group:g}:{}}
-  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,jobs:s.jobs,sessions:s.sessions,people},null,1);
+  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,jobs:s.jobs,notes:s.notes||"",sessions:s.sessions,people},null,1);
 }
 function fmtTime(iso){const d=new Date(iso);if(isNaN(d))return "";const p=x=>String(x).padStart(2,"0");return p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())}
 function setHostedStatus(){
@@ -415,8 +420,9 @@ function renderTabs(){
   const tp=ROOMS.reduce((a,r)=>{const p=areaProgress(r.k);a.need+=p.need;a.done+=p.done;return a},{need:0,done:0});
   $("total").textContent="已派 "+tp.done+" / "+tp.need;
   const bad=conflictInfo(allTasks()).size;
-  $("tabs").innerHTML='<button type="button" data-tab="overview" class="'+(ui.view==="people"||ui.view==="jobs"?"":"on")+'">各區負責人</button><button type="button" data-tab="jobs" class="'+(ui.view==="jobs"?"on":"")+'">工作</button>'
-    +'<button type="button" data-tab="people" class="'+(ui.view==="people"?"on":"")+'">人員'+(bad?'<span class="pill bad" style="margin-left:6px">'+bad+" 人撞時段</span>":"")+"</button>";
+  $("tabs").innerHTML='<button type="button" data-tab="overview" class="'+(["people","jobs","notes"].includes(ui.view)?"":"on")+'">各區負責人</button><button type="button" data-tab="jobs" class="'+(ui.view==="jobs"?"on":"")+'">工作</button>'
+    +'<button type="button" data-tab="people" class="'+(ui.view==="people"?"on":"")+'">人員'+(bad?'<span class="pill bad" style="margin-left:6px">'+bad+" 人撞時段</span>":"")+"</button>"
+    +'<button type="button" data-tab="notes" class="'+(ui.view==="notes"?"on":"")+'">備註</button>';
 }
 function banners(){
   let h="";
@@ -448,6 +454,14 @@ function renderJobs(){
   }
   $("main").innerHTML=h;
   refreshInputs();
+}
+function renderNotes(){
+  let h=banners()+'<div class="head"><h2>備註</h2></div>';
+  if(mode.canEdit){
+    h+='<section class="note-box"><h3>公開備註</h3><p class="tip">'+(mode.hosted?"按「發布更新」後，所有打開網址的人都看得到。不要寫電話或其他個資。":"匯出 Excel 時會一起帶出。")+'</p><textarea id="noteShared" data-board="notes" aria-label="公開備註" placeholder="例如：11/18 前確認各廳設備">'+esc(state.notes)+"</textarea></section>"
+      +'<section class="note-box"><h3>我的筆記</h3><p class="tip">不會發布，也不會匯出 Excel，只存在這個瀏覽器。</p><textarea id="notePrivate" data-board="privateNotes" aria-label="我的筆記" placeholder="想到什麼先記在這裡">'+esc(state.privateNotes)+"</textarea></section>";
+  }else h+=state.notes.trim()?'<section class="note-box"><div class="note-view">'+esc(state.notes)+"</div></section>":'<p class="muted">目前沒有備註。</p>';
+  $("main").innerHTML=h;
 }
 function statusPill(k){const v=state.leadStatus[k]||STATUS[0];return '<button type="button" class="statuspill s'+STATUS.indexOf(v)+'" data-cycle="'+esc(k)+'" title="點一下切換狀態">'+esc(v)+"</button>"}
 function renderRoom(){
@@ -589,7 +603,7 @@ function applyMode(){
 }
 function render(){
   renderTabs();
-  if(ui.view==="overview")renderOverview();else if(ui.view==="people")renderPeople();else if(ui.view==="jobs")renderJobs();else renderRoom();
+  if(ui.view==="overview")renderOverview();else if(ui.view==="people")renderPeople();else if(ui.view==="jobs")renderJobs();else if(ui.view==="notes")renderNotes();else renderRoom();
   applyMode();
   ui.message=null;
   if(ui.flash){const el=$("row-"+ui.flash);if(el)el.scrollIntoView({block:"center"});ui.flash=null}
@@ -598,7 +612,8 @@ function render(){
 // 填寫事件
 $("main").addEventListener("input",e=>{
   const el=e.target,find=id=>state.sessions.find(s=>s.id===id);
-  if(el.dataset.job){const j=state.jobs.find(x=>x.id===el.dataset.job);if(j){j.people=el.value;save()}}
+  if(el.dataset.board==="notes"||el.dataset.board==="privateNotes"){state[el.dataset.board]=el.value;save()}
+  else if(el.dataset.job){const j=state.jobs.find(x=>x.id===el.dataset.job);if(j){j.people=el.value;save()}}
   else if(el.dataset.lead){state.leads[el.dataset.lead]=el.value;save()}
   else if(el.dataset.s){const s=find(el.dataset.s);if(s){s.assign[el.dataset.r]=el.value;save()}}
   else if(el.dataset.note){const s=find(el.dataset.note);if(s){s.note=el.value;save()}}
@@ -838,7 +853,7 @@ function sheetXml(rows){
 }
 function buildXlsx(){
   const leadRows=[["區域","地點","負責人","狀態"],...ROOMS.filter(r=>r.lead).map(r=>[r.name,r.place,(state.leads[r.k]||"").trim(),state.leadStatus[r.k]||STATUS[0]])];
-  const sheets=[{name:"負責人總覽",rows:leadRows},{name:"工作",rows:jobRows()},{name:"總表",rows:flatRows()},...ROOMS.map(r=>({name:r.name,rows:roomRows(r)})),{name:"人員工作單",rows:peopleRows()}];
+  const sheets=[{name:"負責人總覽",rows:leadRows},{name:"工作",rows:jobRows()},...(state.notes.trim()?[{name:"備註",rows:[["備註"],...state.notes.split("\n").map(x=>[x])]}]:[]),{name:"總表",rows:flatRows()},...ROOMS.map(r=>({name:r.name,rows:roomRows(r)})),{name:"人員工作單",rows:peopleRows()}];
   const files=[
     {name:"[Content_Types].xml",text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((s,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("")+"</Types>"},
     {name:"_rels/.rels",text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
@@ -893,6 +908,7 @@ function mergeLocal(remoteState){
   if(publishable(local)!==mode.remoteText){
     try{localStorage.setItem(KEY+"-replaced",JSON.stringify(local))}catch(e){}
   }
+  remoteState.privateNotes=local.privateNotes||"";
   for(const n in local.people){const c=local.people[n]&&local.people[n].contact;if(c){remoteState.people[n]=remoteState.people[n]||{};remoteState.people[n].contact=c}}
   return remoteState;
 }
