@@ -113,6 +113,8 @@ dialog form{display:grid;gap:12px}
 .role-row{display:flex;gap:6px}
 .role-row input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
 .card-jobs{font-size:13px;color:var(--muted)}
+.card-add{border:1.5px dashed var(--line);border-radius:14px;background:none;color:var(--muted);min-height:118px;font-weight:600}
+.card-add:hover{color:var(--accent);border-color:var(--accent);background:none}
 .note-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:8px}
 .note-box h3{margin:0;font-size:15px;color:var(--fg)}
 .note-box textarea{min-height:190px;resize:vertical;font-size:15px;line-height:1.6;background:var(--bg);border-color:transparent}
@@ -201,6 +203,21 @@ button.job-line:hover{background:none;text-decoration:underline}
   </div>
 </form></dialog>
 
+<dialog id="dlgArea"><form method="dialog" id="formArea">
+  <h3 id="dlgAreaTitle">新增區域</h3>
+  <div class="fields">
+    <label style="flex-basis:100%">區域名稱<input id="aName" required maxlength="40" placeholder="例如：一樓報到處"></label>
+    <label style="flex-basis:100%">地點<input id="aPlace" maxlength="60" placeholder="例如：1F 大廳，不確定可留空"></label>
+  </div>
+  <p class="tip" id="aErr" hidden></p>
+  <div class="row-end">
+    <button type="button" class="danger" id="aDelete">刪除區域</button>
+    <span class="spacer"></span>
+    <button type="button" id="aCancel">取消</button>
+    <button type="submit" class="primary">儲存</button>
+  </div>
+</form></dialog>
+
 <dialog id="dlgRoles"><form method="dialog" id="formRoles">
   <h3 id="dlgRolesTitle">職務設定</h3>
   <p class="tip">這裡的職務會成為此廳別派工表的欄位。刪除職務會一併清除該欄已填的人員。</p>
@@ -226,6 +243,7 @@ const ROOMS=[
   {k:"all",name:"茶敘午餐",place:"地點待補",lead:true,noPlace:true},
   {k:"bus",name:"遊覽車",place:"接駁車隨車",noPlace:true}
 ];
+const BASE_ROOMS=ROOMS.map(r=>({...r}));
 const DAYS=[{k:"d1",name:"第 1 天 · 11/20（五）",short:"11/20（五）"},{k:"d2",name:"第 2 天 · 11/21（六）",short:"11/21（六）"},{k:"x",name:"會前／會後",short:"會前／會後"}];
 const STATUS=["未通知","已通知","已確認"];
 const DEFAULT_ROLES={bus:["隨車人員"]};
@@ -274,7 +292,7 @@ const busSessions=()=>BUS.map((b,i)=>({id:"bus"+i,room:"bus",day:b[0],start:b[1]
 function freshState(){
   let n=0;const roles={};
   for(const k in DEFAULT_ROLES) roles[k]=DEFAULT_ROLES[k].map(name=>({id:"r"+(++n),name}));
-  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},jobs:[],notes:"",privateNotes:"",sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
+  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},areas:[],areaOverrides:{},jobs:[],notes:"",privateNotes:"",sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
 }
 function valid(s){return s&&typeof s==="object"&&Array.isArray(s.sessions)&&s.roles&&typeof s.roles==="object"}
 // 舊版資料：已填的人員全部保留，只移除沒填過的預設職務欄
@@ -301,6 +319,8 @@ function normalize(s){
   s.leads=s.leads&&typeof s.leads==="object"?s.leads:{};
   s.leadStatus=s.leadStatus&&typeof s.leadStatus==="object"?s.leadStatus:{};
   s.nextId=Number(s.nextId)||5000;
+  s.areas=(Array.isArray(s.areas)?s.areas:[]).filter(a=>a&&typeof a==="object"&&a.k&&a.name&&!BASE_ROOMS.some(r=>r.k===a.k));
+  s.areaOverrides=s.areaOverrides&&typeof s.areaOverrides==="object"?s.areaOverrides:{};
   s.notes=String(s.notes||"");s.privateNotes=String(s.privateNotes||"");
   s.jobs=(Array.isArray(s.jobs)?s.jobs:[]).filter(j=>j&&typeof j==="object"&&j.id);
   s.jobs.forEach(j=>{j.title=String(j.title||"");j.people=String(j.people||"");j.note=String(j.note||"");if(!STATUS.includes(j.status))j.status=STATUS[0]});
@@ -336,7 +356,7 @@ let saveTimer;
 function publishable(s){
   const people={};
   for(const n in s.people){const g=s.people[n]&&s.people[n].group;people[n]=g?{group:g}:{}}
-  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,jobs:s.jobs,notes:s.notes||"",sessions:s.sessions,people},null,1);
+  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,areas:s.areas,areaOverrides:s.areaOverrides,jobs:s.jobs,notes:s.notes||"",sessions:s.sessions,people},null,1);
 }
 function fmtTime(iso){const d=new Date(iso);if(isNaN(d))return "";const p=x=>String(x).padStart(2,"0");return p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())}
 function setHostedStatus(){
@@ -385,6 +405,7 @@ function leadTasks(k){
     if(!rows.length)continue;
     out.push({id:"lead-"+k+"-"+d,room:k,day:d,start:rows.map(s=>s.start).sort()[0],end:rows.map(s=>s.end).sort().pop(),title:"全部場次",sub:"",isLead:true});
   }
+  if(!out.length)out.push({id:"lead-"+k+"-x",room:k,day:"x",start:"",end:"",title:"全部場次",sub:"",isLead:true,noTime:true});
   return out;
 }
 function allTasks(){
@@ -469,7 +490,7 @@ function renderRoom(){
   const p=areaProgress(room.k);
   let h=banners()+'<button type="button" class="ghost back" data-back="1">‹ 回到各區負責人</button>'
     +'<div class="head"><h2>'+esc(room.name)+'</h2><span class="muted">'+esc(room.place)+'</span><span class="spacer"></span>'
-    +'<button type="button" class="edit-only ghost" data-addjob="1" data-room="'+esc(room.k)+'">新增工作</button><button type="button" class="edit-only ghost" id="editRoles">加欄位</button></div>';
+    +'<button type="button" class="edit-only ghost" data-addjob="1" data-room="'+esc(room.k)+'">新增工作</button><button type="button" class="edit-only ghost" id="editRoles">加欄位</button><button type="button" class="edit-only ghost" data-editarea="'+esc(room.k)+'">編輯區域</button></div>';
   if(room.lead)h+='<div class="leadbox lead-row"><span class="lead-label">負責人</span><input aria-label="負責人" data-lead="'+esc(room.k)+'" list="peopleList" value="'+esc(state.leads[room.k]||"")+'" placeholder="輸入姓名">'+statusPill(room.k)+"</div>";
   for(const d of DAYS){
     let rows=list.filter(s=>s.day===d.k).sort(byTime);
@@ -534,13 +555,17 @@ function renderOverview(){
     if(js.length){const open=js.filter(j=>!names(j.people).length).length;h+='<div class="card-jobs">工作 '+js.length+" 項"+(open?"，"+open+" 項未派":"")+"</div>"}
     h+="</article>";
   }
+  h+='<button type="button" class="card-add edit-only" data-addarea="1">＋ 新增區域</button>';
   $("main").innerHTML=h+"</section>";
   refreshInputs();
 }
-function taskLine(t){const r=roomOf(t.s.room);return t.s.start+"–"+t.s.end+"  "+r.name+(r.noPlace?"":"（"+r.place+"）")+"  "+t.s.title+"｜"+t.role}
+const dayLabel=t=>t.s.noTime?"全程":dayOf(t.s.day).short;
+function taskLine(t){const r=roomOf(t.s.room);return (t.s.noTime?"":t.s.start+"–"+t.s.end+"  ")+r.name+(r.noPlace?"":"（"+r.place+"）")+"  "+t.s.title+"｜"+t.role}
 function personText(n,list){
   let out="【TAAI 2026 工作分配】"+n+"\n";
-  for(const d of DAYS){const ds=list.filter(t=>t.s.day===d.k);if(!ds.length)continue;out+="\n"+d.short+"\n"+ds.map(taskLine).join("\n")+"\n"}
+  const allDay=list.filter(t=>t.s.noTime);
+  if(allDay.length)out+="\n全程\n"+allDay.map(taskLine).join("\n")+"\n";
+  for(const d of DAYS){const ds=list.filter(t=>t.s.day===d.k&&!t.s.noTime);if(!ds.length)continue;out+="\n"+d.short+"\n"+ds.map(taskLine).join("\n")+"\n"}
   return out.trim();
 }
 const SEP=/([,，、;；\/／\n]+)/;
@@ -583,7 +608,7 @@ function renderPeople(){
     h+='<details class="person"'+(cf||ui.openPerson===n?" open":"")+'><summary><b>'+esc(n)+"</b>"+(info.group?'<span class="muted">'+esc(info.group)+"</span>":"")+'<span class="pill">'+list.length+" 項工作</span>"+(cf&&mode.canEdit?'<span class="pill bad">時段重疊</span>':"")+"</summary>"
       +'<div class="body"><div class="fields"><label class="edit-only">姓名<input data-rename="'+esc(n)+'" value="'+esc(n)+'"></label><label>組別<input data-pinfo="group" data-p="'+esc(n)+'" value="'+esc(info.group||"")+'"></label><label class="edit-only">聯絡方式'+(mode.hosted?"（不會發布）":"")+'<input data-pinfo="contact" data-p="'+esc(n)+'" value="'+esc(info.contact||"")+'"></label></div>';
     if(list.length){
-      h+='<ul class="tasks">'+list.map(t=>{const c=cf&&cf.has(t.s.id);return '<li class="'+(c?"conflict":"")+'">'+esc(dayOf(t.s.day).short)+" "+esc(taskLine(t))+(c&&mode.canEdit?"（時段重疊）":"")+"</li>"}).join("")+"</ul>"
+      h+='<ul class="tasks">'+list.map(t=>{const c=cf&&cf.has(t.s.id);return '<li class="'+(c?"conflict":"")+'">'+esc(dayLabel(t))+" "+esc(taskLine(t))+(c&&mode.canEdit?"（時段重疊）":"")+"</li>"}).join("")+"</ul>"
         +'<div><button type="button" data-copy="'+i+'">複製工作單</button></div>';
     }else h+='<p class="tip">尚未分配工作。</p>';
     h+='<div class="edit-only"><button type="button" class="ghost" style="color:var(--bad)" data-delperson="'+esc(n)+'">移除這個人</button></div>';
@@ -601,7 +626,16 @@ function applyMode(){
   if(!mode.canEdit)$("main").querySelectorAll("input,select,.statuspill").forEach(el=>{el.disabled=true});
   setHostedStatus();
 }
+function syncRooms(){
+  const ov=state.areaOverrides||{};
+  const base=BASE_ROOMS.map(r=>{const o=ov[r.k];return o?{...r,name:o.name||r.name,place:o.place||r.place,noPlace:o.place?false:r.noPlace}:{...r}});
+  const custom=(state.areas||[]).map(a=>({k:a.k,name:a.name,place:a.place||"地點待補",noPlace:!a.place,lead:true,custom:true}));
+  const i=base.findIndex(r=>r.k==="all");
+  ROOMS.length=0;ROOMS.push(...base.slice(0,i),...custom,...base.slice(i));
+  ROOMS.forEach(r=>{if(!Array.isArray(state.roles[r.k]))state.roles[r.k]=[]});
+}
 function render(){
+  syncRooms();
   renderTabs();
   if(ui.view==="overview")renderOverview();else if(ui.view==="people")renderPeople();else if(ui.view==="jobs")renderJobs();else if(ui.view==="notes")renderNotes();else renderRoom();
   applyMode();
@@ -644,6 +678,8 @@ $("main").addEventListener("click",e=>{
     const k=b.dataset.cycle,i=STATUS.indexOf(state.leadStatus[k]||STATUS[0]),v=STATUS[(i+1)%STATUS.length];
     state.leadStatus[k]=v;b.textContent=v;b.className="statuspill s"+STATUS.indexOf(v);save();return;
   }
+  if(b.dataset.addarea){openArea(null);return}
+  if(b.dataset.editarea){openArea(b.dataset.editarea);return}
   if(b.dataset.addjob){openJob(null,{link:b.dataset.link,room:b.dataset.room});return}
   if(b.dataset.editjob){openJob(b.dataset.editjob);return}
   if(b.dataset.jobcycle){
@@ -678,7 +714,12 @@ $("tabs").addEventListener("click",e=>{
 let editing=null;
 $("fRoom").innerHTML=ROOMS.map(r=>'<option value="'+r.k+'">'+esc(r.name)+"</option>").join("");
 $("fDay").innerHTML=DAYS.map(d=>'<option value="'+d.k+'">'+esc(d.short)+"</option>").join("");
+function fillRoomSelects(){
+  const opts=ROOMS.map(r=>'<option value="'+esc(r.k)+'">'+esc(r.name)+"</option>").join("");
+  $("fRoom").innerHTML=opts;$("jRoom").innerHTML=opts;
+}
 function openTask(id){
+  fillRoomSelects();
   editing=id;
   const s=id?state.sessions.find(x=>x.id===id):{title:"",sub:"",room:ui.room,day:"d1",start:"08:00",end:"09:00"};
   $("dlgTaskTitle").textContent=id?"編輯工作":"新增工作";
@@ -722,7 +763,7 @@ function toggleJobCustom(){
   ["jRoomWrap","jDayWrap","jStartWrap","jEndWrap"].forEach(id=>{$(id).hidden=!custom});
 }
 function openJob(id,opts){
-  opts=opts||{};editingJob=id;fillLinkOptions();
+  opts=opts||{};editingJob=id;fillRoomSelects();fillLinkOptions();
   const j=id?state.jobs.find(x=>x.id===id):null;
   $("dlgJobTitle").textContent=j?"編輯工作":"新增工作";
   $("jTitle").value=j?j.title:"";
@@ -750,6 +791,43 @@ $("formJob").addEventListener("submit",e=>{
   let j=editingJob?state.jobs.find(x=>x.id===editingJob):null;
   if(!j){j={id:"j"+(state.nextId++),status:STATUS[0]};state.jobs.push(j)}
   Object.assign(j,{title,linkId,people:$("jPeople").value.trim(),note:$("jNote").value.trim(),room:linkId?null:$("jRoom").value,day:linkId?null:$("jDay").value,start:linkId?null:$("jStart").value,end:linkId?null:$("jEnd").value});
+  save();render();
+});
+
+// 區域編輯視窗
+let editingArea=null;
+function openArea(k){
+  editingArea=k;
+  const r=k?roomOf(k):null;
+  $("dlgAreaTitle").textContent=r?"編輯區域":"新增區域";
+  $("aName").value=r?r.name:"";
+  $("aPlace").value=r&&!r.noPlace?r.place:"";
+  $("aErr").hidden=true;
+  $("aDelete").hidden=!(r&&r.custom);
+  $("dlgArea").showModal();
+}
+$("aCancel").addEventListener("click",()=>$("dlgArea").close());
+$("aDelete").addEventListener("click",()=>{
+  const k=editingArea,r=roomOf(k);
+  const used=state.sessions.filter(s=>s.room===k).length+jobsInRoom(k).length;
+  if(used){$("aErr").hidden=false;$("aErr").textContent="這個區域還有 "+used+" 項工作，請先刪除或改到其他區域。";return}
+  if(!window.confirm("確定刪除區域「"+r.name+"」？這裡填的負責人也會移除。"))return;
+  state.areas=state.areas.filter(a=>a.k!==k);
+  delete state.leads[k];delete state.leadStatus[k];delete state.roles[k];
+  $("dlgArea").close();ui.view="overview";save();render();
+});
+$("formArea").addEventListener("submit",e=>{
+  const name=$("aName").value.trim(),place=$("aPlace").value.trim(),err=m=>{e.preventDefault();$("aErr").hidden=false;$("aErr").textContent=m};
+  if(!name)return err("請填寫區域名稱。");
+  if(ROOMS.some(r=>r.name===name&&r.k!==editingArea))return err("已經有叫「"+name+"」的區域了。");
+  if(!editingArea){
+    const k="a"+(state.nextId++);
+    state.areas.push({k,name,place});state.leads[k]="";
+    ui.view="overview";
+  }else{
+    const a=state.areas.find(x=>x.k===editingArea);
+    if(a){a.name=name;a.place=place}else state.areaOverrides[editingArea]={name,place};
+  }
   save();render();
 });
 
@@ -803,7 +881,7 @@ function peopleRows(){
   [...map.keys()].sort((a,b)=>a.localeCompare(b,"zh-Hant")).forEach(n=>{
     const i=state.people[n]||{},list=map.get(n);
     if(!list.length)rows.push([n,i.group||"",i.contact||"","","","","","","",""]);
-    list.forEach(t=>rows.push([n,i.group||"",i.contact||"",dayOf(t.s.day).short,t.s.start,t.s.end,roomOf(t.s.room).name,t.s.title,t.role,bad.get(n)&&bad.get(n).has(t.s.id)?"是":""]));
+    list.forEach(t=>rows.push([n,i.group||"",i.contact||"",dayLabel(t),t.s.start,t.s.end,roomOf(t.s.room).name,t.s.title,t.role,bad.get(n)&&bad.get(n).has(t.s.id)?"是":""]));
   });
   return rows;
 }
@@ -854,6 +932,12 @@ function sheetXml(rows){
 function buildXlsx(){
   const leadRows=[["區域","地點","負責人","狀態"],...ROOMS.filter(r=>r.lead).map(r=>[r.name,r.place,(state.leads[r.k]||"").trim(),state.leadStatus[r.k]||STATUS[0]])];
   const sheets=[{name:"負責人總覽",rows:leadRows},{name:"工作",rows:jobRows()},...(state.notes.trim()?[{name:"備註",rows:[["備註"],...state.notes.split("\n").map(x=>[x])]}]:[]),{name:"總表",rows:flatRows()},...ROOMS.map(r=>({name:r.name,rows:roomRows(r)})),{name:"人員工作單",rows:peopleRows()}];
+  const seen=new Set();
+  sheets.forEach(s=>{
+    const base=(String(s.name).replace(/[\[\]:*?\/\\]/g," ").trim()||"工作表").slice(0,28);let n=base,c=2;
+    while(seen.has(n))n=base+" "+(c++);
+    seen.add(n);s.name=n;
+  });
   const files=[
     {name:"[Content_Types].xml",text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((s,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("")+"</Types>"},
     {name:"_rels/.rels",text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
