@@ -1,6 +1,6 @@
 {
  "v": 2,
- "nextId": 1001,
+ "nextId": 1002,
  "roles": {
   "bus": [
    {
@@ -28,7 +28,20 @@
   "all": ""
  },
  "leadStatus": {},
- "jobs": [],
+ "jobs": [
+  {
+   "id": "j1001",
+   "status": "未通知",
+   "title": "司儀",
+   "linkId": "s4",
+   "people": "陳思因",
+   "note": "",
+   "room": null,
+   "day": null,
+   "start": null,
+   "end": null
+  }
+ ],
  "sessions": [
   {
    "id": "s0",
@@ -843,5 +856,5 @@
   "藺宇昕": {},
   "侯惠晏": {}
  },
- "updatedAt": "2026-11-05T09:21:31.730Z"
+ "updatedAt": "2026-11-05T09:24:15.449Z"
 }
