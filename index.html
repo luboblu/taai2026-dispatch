@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#111315" media="(prefers-color-scheme:dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231b1f24'/%3E%3Cpath d='M9 10h14v3.2h-5.4V24h-3.2V13.2H9z' fill='%23fff'/%3E%3C/svg%3E">
 <title>TAAI 2026 派工表</title>
 <style id="pageStyle"></style>
 <style>
@@ -11,13 +14,13 @@
 :root{
   --bg:#ffffff;--side:#f7f8f9;--surface2:#f4f5f6;--hover:#f7f8f9;--line:#e4e6e9;--line2:#cfd3d8;
   --fg:#1b1f24;--muted:#646c76;--selected:#eef3fb;--ink:#1b1f24;--ink-fg:#ffffff;--accent:#0b63ce;
-  --warn:#946200;--bad:#c02b2b;--good:#1a7f45;--neutral:#9aa1aa;
+  --warn:#946200;--bad:#c02b2b;--good:#1a7f45;--neutral:#858c95;--control:#8a919b;--stick:48px;
   --sans:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei","Segoe UI",sans-serif;
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#111315;--side:#0d0f10;--surface2:#1a1d20;--hover:#16191b;--line:#272b2f;--line2:#3b4046;
   --fg:#e6e8eb;--muted:#99a1ab;--selected:#1a2531;--ink:#e6e8eb;--ink-fg:#111315;--accent:#5ba4f5;
-  --warn:#d7a84d;--bad:#ef7d75;--good:#57bd7f;--neutral:#6d747d;
+  --warn:#d7a84d;--bad:#ef7d75;--good:#57bd7f;--neutral:#7d858e;--control:#727a83;
   color-scheme:dark;
 }}
 *{box-sizing:border-box}
@@ -25,7 +28,7 @@
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
-h1,h2,h3,p{margin:0}
+h1,h2,p{margin:0}
 svg{display:block;width:1em;height:1em;flex:none}
 button{cursor:pointer;background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:4px 11px;min-height:30px;font-size:13px;font-weight:500;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:5px}
 button:hover{background:var(--surface2)}
@@ -81,7 +84,8 @@ main section{min-width:0}
 
 /* 頁首 */
 .page-head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;min-height:32px}
-h2{font-size:18px;font-weight:600;line-height:1.3}
+main h1{font-size:18px;font-weight:600;line-height:1.3}
+main h1:focus{outline:0}
 .page-sub{color:var(--muted);font-size:13px}
 .muted{color:var(--muted)}
 .tip{font-size:13px;color:var(--muted)}
@@ -105,16 +109,23 @@ h2{font-size:18px;font-weight:600;line-height:1.3}
 .subtabs button:hover{background:none;color:var(--fg)}
 .subtabs button.on{color:var(--fg);font-weight:600;border-bottom-color:var(--ink)}
 .inline-select{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);padding-bottom:5px}
-.inline-select select{border:1px solid var(--line2);border-radius:6px;background:var(--bg);padding:3px 6px;font-size:13px;color:var(--fg);max-width:55vw}
+.inline-select select{border:1px solid var(--control);border-radius:6px;background:var(--bg);padding:3px 6px;font-size:13px;color:var(--fg);max-width:55vw}
 
 /* 資料表 */
-.tbl-wrap{border:1px solid var(--line);border-radius:7px;overflow-x:auto}
+.tbl-wrap{border:1px solid var(--line);border-radius:7px}
+.tbl thead th{position:sticky;top:var(--stick);z-index:2;background:var(--bg)}
+.tbl thead th:first-child{border-top-left-radius:6px}
+.tbl thead th:last-child{border-top-right-radius:6px}
+.toolbar+.tbl-wrap thead th{border-radius:0}
+.tbl tbody:last-child tr:last-child>:first-child{border-bottom-left-radius:6px}
+.tbl tbody:last-child tr:last-child>:last-child{border-bottom-right-radius:6px}
 .toolbar+.tbl-wrap,.toolbar+section .tbl-wrap{border-top:0;border-top-left-radius:0;border-top-right-radius:0}
 .tbl{width:100%;border-collapse:separate;border-spacing:0}
 .tbl th{font-weight:500;font-size:12.5px;color:var(--muted);text-align:left;padding:6px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
 .tbl td{padding:6px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
-.tbl tbody:last-child tr:last-child td{border-bottom:0}
-.tbl tbody tr:not(.group):hover td{background:var(--hover)}
+.tbl tbody:last-child tr:last-child>*{border-bottom:0}
+.tbl tbody tr:not(.group):hover>*{background:var(--hover)}
+.tbl th.c-title{font-weight:400;font-size:14px;color:var(--fg);white-space:normal;padding:6px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
 .tbl tr.group th{background:var(--surface2);color:var(--fg);font-weight:600;padding:5px 12px}
 .tbl tr.group th span{font-weight:400;color:var(--muted);margin-left:6px}
 .c-time{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;width:1%}
@@ -129,10 +140,10 @@ h2{font-size:18px;font-weight:600;line-height:1.3}
 .c-num .warn{color:var(--warn)}
 .c-status{width:1%;white-space:nowrap}
 .c-act{width:1%;white-space:nowrap;text-align:right}
-tr.sub .c-title{padding-left:26px}
-tr.sub .c-title b{font-weight:400}
+.tbl tr.sub th.c-title{padding-left:26px}
+.tbl tr.sub .c-title b{font-weight:400}
 tr.sub td{background:none}
-@media (hover:hover){.row-act{opacity:0;transition:opacity .08s}tr:hover .row-act,.row-act:focus-visible,.row-act:focus-within{opacity:1}}
+@media (hover:hover){.row-act{opacity:0;transition:opacity .08s}tr:hover .row-act,tr:focus-within .row-act,.row-act:focus-visible{opacity:1}}
 
 /* 人員欄位 */
 .chips{display:flex;flex-wrap:wrap;gap:3px;align-items:center;min-height:30px;padding:2px 4px;margin:0 -5px;border:1px solid transparent;border-radius:5px;cursor:text}
@@ -141,13 +152,13 @@ tr.sub td{background:none}
 .chip{display:inline-flex;align-items:center;gap:1px;background:var(--surface2);border:1px solid var(--line);font-size:13px;border-radius:4px;padding:0 2px 0 7px;min-height:23px;max-width:100%;overflow-wrap:anywhere}
 .chip.bad{border-color:var(--bad);color:var(--bad);background:none}
 .chip.na{color:var(--muted);background:none;border-style:dashed}
-.chip-x{border:0;background:none;padding:2px;min-height:0;border-radius:3px;color:var(--muted);font-size:10px}
+.chip-x{border:0;background:none;padding:0;width:20px;height:20px;min-height:0;border-radius:3px;color:var(--muted);font-size:10px}
 .chip-x:hover{background:var(--line);color:var(--fg)}
 .chip-input{flex:1 1 56px;min-width:56px;border:0;background:none;outline:0;padding:1px 3px;font-size:13px;width:60px}
 .chip-input::placeholder{color:var(--muted)}
 .chips.empty .chip-input::placeholder{color:var(--warn)}
 .chips.empty .chip-input:focus::placeholder{color:var(--muted)}
-.chip-na{border:0;background:none;color:var(--muted);font-size:12px;font-weight:400;padding:0 4px;min-height:0;opacity:0}
+.chip-na{border:0;background:none;color:var(--muted);font-size:12px;font-weight:400;padding:0 6px;min-height:24px;opacity:0}
 .chips:hover .chip-na,.chips:focus-within .chip-na,.chip-na:focus-visible{opacity:1}
 @media (hover:none){.chip-na{opacity:1}}
 .chip-na:hover{background:none;color:var(--fg);text-decoration:underline}
@@ -178,7 +189,7 @@ tr.sub td{background:none}
 .add-people{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap}
 .add-people textarea{flex:2 1 280px}
 .add-people input{flex:1 1 170px}
-.add-people textarea,.add-people input{min-width:0;height:32px;min-height:32px;padding:5px 9px;font-size:13.5px;resize:vertical;background:var(--bg);border:1px solid var(--line2);border-radius:6px;color:var(--fg)}
+.add-people textarea,.add-people input{min-width:0;height:32px;min-height:32px;padding:5px 9px;font-size:13.5px;resize:vertical;background:var(--bg);border:1px solid var(--control);border-radius:6px;color:var(--fg)}
 .people{border:1px solid var(--line);border-radius:7px;overflow:hidden}
 .people-head,.person summary{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 56px 56px 56px 78px 14px;gap:12px;align-items:center;padding:6px 12px}
 .people-head{font-size:12.5px;font-weight:500;color:var(--muted);border-bottom:1px solid var(--line)}
@@ -206,24 +217,24 @@ tr.sub td{background:none}
 .fields{display:flex;flex-wrap:wrap;gap:10px}
 .fields label,.fields .field{display:grid;gap:3px;font-size:12.5px;color:var(--muted);flex:1 1 170px;min-width:0}
 .fields .wide{flex-basis:100%}
-.fields input,.fields select,textarea{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:5px 9px;color:var(--fg);font-size:13.5px;max-width:100%;min-height:32px}
-.fields .chips{color:var(--fg);margin:0;border-color:var(--line2);min-height:32px}
+.fields input,.fields select,textarea{width:100%;background:var(--bg);border:1px solid var(--control);border-radius:6px;padding:5px 9px;color:var(--fg);font-size:13.5px;max-width:100%;min-height:32px}
+.fields .chips{color:var(--fg);margin:0;border-color:var(--control);min-height:32px}
 .fields .chips.empty .chip-input::placeholder{color:var(--muted)}
 .fields .chip-input{width:60px;border:0;background:none;padding:1px 3px;min-height:0}
 dialog{border:1px solid var(--line2);border-radius:9px;background:var(--bg);color:var(--fg);width:min(480px,calc(100vw - 32px));padding:18px;box-shadow:0 16px 48px rgba(0,0,0,.22)}
 dialog::backdrop{background:rgba(10,12,14,.42)}
 dialog form{display:grid;gap:14px}
-dialog h3{font-size:15px;font-weight:600}
+dialog h2{font-size:15px;font-weight:600}
 .row-end{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-items:center}
 .err{color:var(--bad);font-size:13px}
 .role-row{display:flex;gap:6px}
-.role-row input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:4px 9px}
+.role-row input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--control);border-radius:6px;padding:4px 9px}
 .stack{display:grid;gap:8px}
 
 /* 備註 */
 .notes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));border:1px solid var(--line);border-radius:7px;overflow:hidden}
 .note-box{padding:12px 14px;display:grid;gap:4px;align-content:start;border-left:1px solid var(--line);margin-left:-1px}
-.note-box h3{font-size:13.5px;font-weight:600}
+.note-box h2{font-size:13.5px;font-weight:600}
 .note-box textarea{border:0;padding:6px 0 0;min-height:300px;resize:vertical;line-height:1.7;background:none;font-size:14px;outline:0}
 .note-view{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;max-width:70ch}
 
@@ -243,7 +254,7 @@ dialog h3{font-size:15px;font-weight:600}
 .tbl input[type=checkbox]{width:15px;height:15px;margin:0;vertical-align:middle;accent-color:var(--ink);cursor:pointer}
 .tbl tr.group th label{display:inline-flex;gap:12px;align-items:center;cursor:pointer}
 .tbl tr.group th label span{margin-left:-6px}
-.tbl tbody tr.selected td{background:var(--selected)}
+.tbl tbody tr.selected>*{background:var(--selected)}
 .need{flex:none;margin-left:auto;padding:0 3px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .need.short{color:var(--warn);font-weight:600}
 .need.over{color:var(--bad);font-weight:600}
@@ -259,9 +270,25 @@ body.has-batch main{padding-bottom:96px}
 body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .toast-undo{background:none;border:0;color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px;min-height:0;padding:0;margin-left:12px}
 .toast-undo:hover{background:none;opacity:.8}
+.skip{position:absolute;left:8px;top:-60px;z-index:30}
+.skip:focus{top:8px}
+main:focus{outline:0}
+@media (pointer:coarse){
+  button,.menu summary{min-height:36px}
+  button.ghost{min-height:36px}
+  .chip{min-height:30px}
+  .chip-x{width:28px;height:28px;margin:-1px -2px -1px 0;font-size:12px}
+  .chip-na{min-height:30px;padding:0 8px}
+  .chip-input{min-height:28px}
+  .status select{min-height:32px}
+  .tbl input[type=checkbox]{width:20px;height:20px}
+  button.link{min-height:28px}
+  .tabs button{min-height:40px}
+  .todo-date{min-height:32px}
+}
 .ro .edit-only{display:none!important}
 
-@media (max-width:860px){
+@media (max-width:980px){
   .app{display:block}
   .side{display:none}
   .top{padding:6px 16px;min-height:44px}
@@ -276,12 +303,12 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .toolbar{margin-bottom:-14px}
   .batchbar{left:16px;right:16px;transform:none;max-width:none}
 }
-@media (max-width:680px){
+@media (max-width:760px){
   .tbl,.tbl tbody,.tbl tr,.tbl td,.tbl th{display:block}
   .tbl thead{display:none}
   .tbl tbody tr:not(.group){display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 10px;padding:9px 12px;border-bottom:1px solid var(--line);align-items:center}
   .tbl tbody:last-child tr:last-child{border-bottom:0}
-  .tbl td{border:0!important;padding:0;width:auto;min-width:0;background:none!important}
+  .tbl td,.tbl th.c-title{border:0!important;padding:0;width:auto;min-width:0;background:none!important}
   .tbl td:empty{display:none}
   .tbl tr.group th{border-bottom:1px solid var(--line)}
   .tbl tbody tr.selectable{position:relative;padding-left:38px}
@@ -293,7 +320,7 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .c-meta{grid-column:1/-1}
   .c-num{display:none!important}
   .c-people{grid-column:1/-1;margin-top:2px}
-  tr.sub .c-title{padding-left:12px}
+  .tbl tr.sub th.c-title{padding-left:12px}
   tr.sub .c-people{padding-left:12px}
   .people-head{display:none}
   .person summary{grid-template-columns:minmax(0,1fr) auto 14px;gap:2px 10px}
@@ -340,7 +367,7 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .print-only{display:none}
 .now-strip{font-size:13px;color:var(--muted);margin-bottom:-6px}
 .board-find{display:flex;gap:8px;align-items:center;padding-bottom:5px}
-.board-find input{height:28px;width:150px;border:1px solid var(--line2);border-radius:6px;padding:2px 8px;font-size:13px;background:var(--bg);color:var(--fg)}
+.board-find input{height:28px;width:150px;border:1px solid var(--control);border-radius:6px;padding:2px 8px;font-size:13px;background:var(--bg);color:var(--fg)}
 .board-days{display:grid;gap:18px;min-width:0}
 .board-day{min-width:0}
 .board-wrap{border:1px solid var(--line);border-radius:0 0 7px 7px;border-top:0;overflow:auto;max-height:calc(100vh - 176px);background:var(--bg)}
@@ -370,7 +397,7 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .b-item .short,.b-head .short{color:var(--warn);font-weight:600}
 .board-list{display:none}
 .l-group{display:grid;gap:5px;padding:8px 0;border-bottom:1px solid var(--line)}
-.l-group h4{margin:0;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.l-group h2{margin:0;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
 .l-group .b-item{margin:0;padding:7px 9px;font-size:13.5px}
 .board-pre{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:6px}
 .board-pre .b-item{margin:0}
@@ -410,8 +437,9 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .b-sub{display:none}
   .b-person{margin-top:0}
   .board-pre .b-item{font-size:8pt}
-  .tbl-wrap{overflow:visible}
+  .tbl thead th{position:static}
   .tbl tr{break-inside:avoid}
+  .skip{display:none}
   .chip-x,.chip-input,.chip-na,.row-act,.clash,.subtabs{display:none!important}
   .c-act>*,.c-check>*{display:none!important}
   .c-act,.c-check{padding:0!important;width:0!important}
@@ -436,6 +464,7 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 </style>
 </head>
 <body>
+<button type="button" class="skip" id="skipLink">跳到主要內容</button>
 <div class="app">
 <aside class="side" aria-label="主要導覽">
   <div class="side-brand"><b>TAAI 2026 派工表</b><span>11/20–21 · 大板根森林溫泉酒店</span></div>
@@ -460,14 +489,14 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   </div>
 </header>
 <nav class="tabs" id="tabs" aria-label="切換檢視"></nav>
-<main id="main"></main>
+<main id="main" tabindex="-1"></main>
 </div>
 </div>
 <div id="toast" role="status" hidden></div>
 <datalist id="peopleList"></datalist>
 
-<dialog id="dlgTask"><form method="dialog" id="formTask">
-  <h3 id="dlgTaskTitle">編輯場次</h3>
+<dialog id="dlgTask" aria-labelledby="dlgTaskTitle"><form method="dialog" id="formTask">
+  <h2 id="dlgTaskTitle">編輯場次</h2>
   <div class="fields">
     <label style="flex-basis:100%">名稱<input id="fTitle" required maxlength="100"></label>
     <label style="flex-basis:100%">補充說明<input id="fSub" maxlength="150"></label>
@@ -486,16 +515,16 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   </div>
 </form></dialog>
 
-<dialog id="dlgLogin"><form method="dialog" id="formLogin">
-  <h3>編輯登入</h3>
+<dialog id="dlgLogin" aria-labelledby="dlgLoginTitle"><form method="dialog" id="formLogin">
+  <h2 id="dlgLoginTitle">編輯登入</h2>
   <p class="tip">請貼上只授權給這個 repo 的 GitHub fine-grained token（Contents: Read and write）。它只會存在這個瀏覽器裡，共用電腦上用完請登出。</p>
   <div class="fields"><label style="flex-basis:100%">GitHub token<input id="fToken" type="password" autocomplete="off" required></label></div>
   <p class="err" id="loginErr" hidden></p>
   <div class="row-end"><button type="button" id="loginCancel">取消</button><button type="submit" class="primary">登入</button></div>
 </form></dialog>
 
-<dialog id="dlgJob"><form method="dialog" id="formJob">
-  <h3 id="dlgJobTitle">新增工作</h3>
+<dialog id="dlgJob" aria-labelledby="dlgJobTitle"><form method="dialog" id="formJob">
+  <h2 id="dlgJobTitle">新增工作</h2>
   <div class="fields">
     <label class="wide">工作名稱<input id="jTitle" required maxlength="100" ></label>
     <label class="wide" id="jLinkWrap">對應的議程場次<select id="jLink"></select></label>
@@ -517,8 +546,8 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   </div>
 </form></dialog>
 
-<dialog id="dlgArea"><form method="dialog" id="formArea">
-  <h3 id="dlgAreaTitle">新增區域</h3>
+<dialog id="dlgArea" aria-labelledby="dlgAreaTitle"><form method="dialog" id="formArea">
+  <h2 id="dlgAreaTitle">新增區域</h2>
   <div class="fields">
     <label style="flex-basis:100%">區域名稱<input id="aName" required maxlength="40" ></label>
     <label style="flex:3 1 220px">地點<input id="aPlace" maxlength="60" placeholder="選填"></label>
@@ -533,8 +562,8 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   </div>
 </form></dialog>
 
-<dialog id="dlgTodo"><form method="dialog" id="formTodo">
-  <h3>編輯待辦</h3>
+<dialog id="dlgTodo" aria-labelledby="dlgTodoTitle"><form method="dialog" id="formTodo">
+  <h2 id="dlgTodoTitle">編輯待辦</h2>
   <div class="fields">
     <label class="wide">事項<input id="tTitle" required maxlength="200"></label>
     <div class="field" style="flex:3 1 240px"><span>負責人（選填，可多位）</span><div id="tPeopleWrap"></div></div>
@@ -550,8 +579,8 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   </div>
 </form></dialog>
 
-<dialog id="dlgBatch"><form method="dialog" id="formBatch">
-  <h3 id="bTitle">批次編輯</h3>
+<dialog id="dlgBatch" aria-labelledby="bTitle"><form method="dialog" id="formBatch">
+  <h2 id="bTitle">批次編輯</h2>
   <div class="fields">
     <label class="wide" id="bRoleWrap">職務<select id="bRole"></select></label>
     <div class="field wide"><span>人員</span><div id="bPeopleWrap"></div></div>
@@ -566,8 +595,17 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   </div>
 </form></dialog>
 
-<dialog id="dlgConflict"><form method="dialog" id="formConflict">
-  <h3>線上有較新的版本</h3>
+<dialog id="dlgConfirm" aria-labelledby="cTitle"><form method="dialog">
+  <h2 id="cTitle"></h2>
+  <p class="tip" id="cText"></p>
+  <div class="row-end">
+    <button type="button" id="cNo">取消</button>
+    <button type="button" class="primary" id="cYes">確定</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgConflict" aria-labelledby="dlgConflictTitle"><form method="dialog" id="formConflict">
+  <h2 id="dlgConflictTitle">線上有較新的版本</h2>
   <p class="tip" id="cfText"></p>
   <ul class="cf-diff" id="cfDiff"></ul>
   <p class="tip">選擇載入線上版後，你的版本仍會保留在這個瀏覽器，可以再還原。</p>
@@ -579,8 +617,8 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   </div>
 </form></dialog>
 
-<dialog id="dlgRoles"><form method="dialog" id="formRoles">
-  <h3 id="dlgRolesTitle">場次職務欄位</h3>
+<dialog id="dlgRoles" aria-labelledby="dlgRolesTitle"><form method="dialog" id="formRoles">
+  <h2 id="dlgRolesTitle">場次職務欄位</h2>
   <p class="tip">這裡的職務會出現在此區域的每個場次下，例如「隨車人員」。刪除職務會一併清除已填的人員。</p>
   <div class="stack" id="roleRows"></div>
   <div><button type="button" id="roleAdd">新增職務</button></div>
@@ -885,12 +923,13 @@ function renderTabs(){
   const todoN=ready?state.todos.filter(x=>!x.done).length:0,todoLate=ready&&state.todos.some(todoOverdue);
   const count=(n,cls)=>n?'<span class="counter'+(cls?" "+cls:"")+'">'+n+"</span>":"";
   const items=[["overview","各區負責人",""],["board","現場總表",""],["jobs","工作",count(open)],["todo","待辦",count(todoN,todoLate?"bad":"")],["people","人員",count(bad,"bad")],["notes","備註",""]];
-  $("sideNav").innerHTML=items.map(([v,l,c])=>'<button type="button" class="nav-item'+(cur===v?" on":"")+'" data-tab="'+v+'"><span>'+l+"</span>"+c+"</button>").join("");
+  $("sideNav").innerHTML=items.map(([v,l,c])=>'<button type="button" class="nav-item'+(cur===v?" on":"")+'"'+(cur===v?' aria-current="page"':"")+' data-tab="'+v+'"><span>'+l+"</span>"+c+"</button>").join("");
   $("sideAreas").innerHTML=ROOMS.map(r=>{
     const p=areaProgress(r.k),gap=ready?p.need-p.done:0;
-    return '<button type="button" class="nav-item'+(inRoom&&ui.room===r.k?" on":"")+'" data-open-room="'+esc(r.k)+'"><span>'+esc(r.name)+"</span>"+(gap?'<span class="open-dot" title="有 '+gap+' 項未指派"></span>':"")+"</button>";
+    return '<button type="button" class="nav-item'+(inRoom&&ui.room===r.k?" on":"")+'"'+(inRoom&&ui.room===r.k?' aria-current="page"':"")+' data-open-room="'+esc(r.k)+'"><span>'+esc(r.name)+"</span>"+(gap?'<span class="open-dot" title="有 '+gap+' 項未指派"></span>':"")+"</button>";
   }).join("");
-  $("tabs").innerHTML=items.map(([v,l,c])=>'<button type="button" class="'+(cur===v||(v==="overview"&&cur==="room")?"on":"")+'" data-tab="'+v+'">'+l+(c?" "+c:"")+"</button>").join("");
+  $("tabs").innerHTML=items.map(([v,l,c])=>'<button type="button" class="'+(cur===v||(v==="overview"&&cur==="room")?"on":"")+'"'+(cur===v?' aria-current="page"':"")+' data-tab="'+v+'">'+l+(c?" "+c:"")+"</button>").join("");
+  document.title=(inRoom?roomOf(ui.room).name:({overview:"各區負責人",board:"現場總表",jobs:"工作",todo:"待辦",people:"人員",notes:"備註"}[cur]))+" · TAAI 2026 派工表";
   const label={overview:"各區負責人",board:"現場總表",jobs:"工作",todo:"待辦",people:"人員",notes:"備註"}[cur];
   $("crumb").innerHTML='<span class="c-root">TAAI 2026</span>'
     +(inRoom?'<span class="c-mid"><button type="button" data-tab="overview">各區負責人</button></span><span class="c-mid">/</span><b>'+esc(roomOf(ui.room).name)+"</b>":'<span class="c-mid"><b>'+label+"</b></span>");
@@ -909,10 +948,10 @@ function editBtn(attr,id){return mode.canEdit?'<button type="button" class="ghos
 function selBox(id,group,label){
   return mode.canEdit?'<td class="c-check"><input type="checkbox" class="sel-row" id="sel-'+esc(id)+'" value="'+esc(id)+'" data-group="'+esc(group)+'" aria-label="選取 '+esc(label)+'"'+(ui.sel.has(id)?" checked":"")+"></td>":"";
 }
-function selHead(){return mode.canEdit?'<th class="c-check"><input type="checkbox" class="sel-all" id="sel-all" aria-label="全選"></th>':""}
+function selHead(){return mode.canEdit?'<th scope=col class="c-check"><input type="checkbox" class="sel-all" id="sel-all" aria-label="全選"></th>':""}
 function groupRow(group,text,n,cols){
-  if(!mode.canEdit)return '<tr class="group"><th colspan="'+cols+'">'+esc(text)+"<span>"+n+"</span></th></tr>";
-  return '<tr class="group"><th colspan="'+cols+'"><label><input type="checkbox" class="sel-group" id="selg-'+esc(group)+'" data-group="'+esc(group)+'" aria-label="選取 '+esc(text)+' 全部">'+esc(text)+"<span>"+n+"</span></label></th></tr>";
+  if(!mode.canEdit)return '<tr class="group"><th scope=rowgroup colspan="'+cols+'">'+esc(text)+"<span>"+n+"</span></th></tr>";
+  return '<tr class="group"><th scope=rowgroup colspan="'+cols+'"><label><input type="checkbox" class="sel-group" id="selg-'+esc(group)+'" data-group="'+esc(group)+'" aria-label="選取 '+esc(text)+' 全部">'+esc(text)+"<span>"+n+"</span></label></th></tr>";
 }
 function batchBar(text,buttons){
   if(!mode.canEdit||!ui.sel.size)return "";
@@ -922,7 +961,7 @@ function jobTr(j,group){
   const i=jobInfo(j),has=names(j.people).length>0;
   return '<tr'+(ui.sel.has(j.id)?' class="selected"':"")+">"+selBox(j.id,group,j.title)
     +'<td class="c-time">'+timeRange(i)+"</td>"
-    +'<td class="c-title"><b>'+esc(j.title)+"</b>"+(j.note?'<small class="note">'+esc(j.note)+"</small>":"")+"</td>"
+    +'<th scope=row class="c-title"><b>'+esc(j.title)+"</b>"+(j.note?'<small class="note">'+esc(j.note)+"</small>":"")+"</th>"
     +'<td class="c-meta">'+esc(jobWhere(i))+"</td>"
     +'<td class="c-people">'+chipsHtml("job",j.id,"",j.title,jobNeed(j))+"</td>"
     +'<td class="c-status">'+statusHtml("job",j.id,j.status,has)+"</td>"
@@ -936,7 +975,7 @@ function renderJobs(){
   const areas=ROOMS.filter(r=>jobsInRoom(r.k).length);
   if(ui.jobArea&&!areas.some(r=>r.k===ui.jobArea))ui.jobArea="";
   const pass=j=>(ui.jobFilter==="all"||(ui.jobFilter==="open"&&jobShort(j))||(ui.jobFilter==="clash"&&isClash(j)))&&(!ui.jobArea||jobInfo(j).room===ui.jobArea);
-  let h=banners()+'<div class="page-head"><h2>工作</h2><span class="spacer"></span>'+(mode.canEdit?'<button type="button" class="primary" data-addjob="1">新增工作</button>':"")+"</div>";
+  let h=banners()+'<div class="page-head"><h1 tabindex="-1">工作</h1><span class="spacer"></span>'+(mode.canEdit?'<button type="button" class="primary" data-addjob="1">新增工作</button>':"")+"</div>";
   if(!state.jobs.length){
     h+='<section class="blank"><p>'+(mode.canEdit?"還沒有工作。可以按「新增工作」，或到區域頁勾選多個場次一次新增。":"目前還沒有工作。")+"</p></section>";
     $("main").innerHTML=h;return;
@@ -945,7 +984,7 @@ function renderJobs(){
   h+='<div class="toolbar"><div class="subtabs" role="group" aria-label="篩選工作">'+seg("all","全部",state.jobs.length)+(openN?seg("open","缺人",openN):"")+(clashN?seg("clash","時段重疊",clashN):"")+"</div>";
   if(areas.length>1)h+='<label class="inline-select">區域<select id="jobArea"><option value="">全部</option>'+areas.map(r=>'<option value="'+esc(r.k)+'"'+(ui.jobArea===r.k?" selected":"")+">"+esc(r.name)+"</option>").join("")+"</select></label>";
   const cols=mode.canEdit?7:6;
-  h+='</div><div class="tbl-wrap"><table class="tbl"><thead><tr>'+selHead()+"<th>時間</th><th>工作</th><th>區域與場次</th><th>負責人</th><th>通知</th><th></th></tr></thead>";
+  h+='</div><div class="tbl-wrap"><table class="tbl" aria-label="工作清單"><thead><tr>'+selHead()+"<th scope=col>時間</th><th scope=col>工作</th><th scope=col>區域與場次</th><th scope=col>負責人</th><th scope=col>通知狀態</th><th scope=col><span class=sr>操作</span></th></tr></thead>";
   let shown=0;
   for(const d of DAYS){
     const rows=state.jobs.filter(j=>pass(j)&&jobInfo(j).day===d.k).sort((a,b)=>{const x=jobInfo(a),y=jobInfo(b);return byTime(x,y)||ROOMS.findIndex(r=>r.k===x.room)-ROOMS.findIndex(r=>r.k===y.room)});
@@ -1043,7 +1082,7 @@ function boardListHtml(items,day,now){
   const starts=[...new Set(items.map(i=>i.start))].sort();
   let h='<div class="board-list">';
   for(const t of starts){
-    h+='<section class="l-group"><h4>'+esc(t)+"</h4>";
+    h+='<section class="l-group"><h2>'+esc(t)+"</h2>";
     for(const it of items.filter(i=>i.start===t)){
       const r=roomOf(it.room);
       h+=boardItemHtml({...it,sub:r.name+(it.sub?" · "+it.sub:"")},day,now,"");
@@ -1056,7 +1095,7 @@ function renderBoard(){
   const now=boardNow();
   if(!ui.boardDay)ui.boardDay=Object.keys(DAY_DATE).find(k=>DAY_DATE[k]===now.date)||"d1";
   const days=ui.boardDay==="all"?["d1","d2"]:[ui.boardDay];
-  let h=banners()+'<div class="page-head no-print"><h2>現場總表</h2><span class="spacer"></span><button type="button" data-print="1">列印或存 PDF</button></div>';
+  let h=banners()+'<div class="page-head no-print"><h1 tabindex="-1">現場總表</h1><span class="spacer"></span><button type="button" data-print="1">列印或存 PDF</button></div>';
   const todayKey=Object.keys(DAY_DATE).find(k=>DAY_DATE[k]===now.date);
   if(todayKey){
     const live=boardItems(todayKey).filter(i=>i.start<=now.time&&now.time<i.end).length;
@@ -1069,13 +1108,13 @@ function renderBoard(){
   for(const d of days){
     const items=boardItems(d);
     h+='<section class="board-day"><p class="print-title print-only"><b>TAAI 2026 現場總表</b> '+esc(dayOf(d).name)+"<span>"+esc(when)+"</span></p>";
-    if(ui.boardDay==="all")h+='<h3 class="sec-title no-print">'+esc(dayOf(d).name)+"</h3>";
+    if(ui.boardDay==="all")h+='<h2 class="sec-title no-print">'+esc(dayOf(d).name)+"</h2>";
     h+=items.length?boardGridHtml(items,d,now)+boardListHtml(items,d,now):'<p class="blank">這一天沒有場次。</p>';
     h+="</section>";
   }
   const pre=boardItems("x");
   if(pre.length){
-    h+='<section class="board-day"><h3 class="sec-title">會前／會後<span>'+pre.length+'</span></h3><div class="board-pre">'+pre.map(it=>boardItemHtml({...it,sub:roomOf(it.room).name},"x",now,"")).join("")+"</div></section>";
+    h+='<section class="board-day"><h2 class="sec-title">會前／會後<span>'+pre.length+'</span></h2><div class="board-pre">'+pre.map(it=>boardItemHtml({...it,sub:roomOf(it.room).name},"x",now,"")).join("")+"</div></section>";
   }
   $("main").innerHTML=h+"</div>";
   applyBoardPerson();
@@ -1114,14 +1153,14 @@ function todoRow(t){
   const due=mode.canEdit
     ?'<input type="date" class="todo-date" id="tdue-'+esc(t.id)+'" data-tododue="'+esc(t.id)+'" aria-label="'+esc(t.title+" 期限")+'" value="'+esc(t.due)+'">'
     :(t.due?esc(fmtDue(t.due)):"");
-  return '<tr class="selectable todo-row'+(t.done?" done":"")+'"><td class="c-check">'+box+'</td><td class="c-title"><span class="t-strong todo-title">'+esc(t.title)+"</span>"+(t.note?'<small class="note">'+esc(t.note)+"</small>":"")+"</td>"
+  return '<tr class="selectable todo-row'+(t.done?" done":"")+'"><td class="c-check">'+box+'</td><th scope=row class="c-title"><span class="t-strong todo-title">'+esc(t.title)+"</span>"+(t.note?'<small class="note">'+esc(t.note)+"</small>":"")+"</th>"
     +'<td class="c-people">'+chipsHtml("todo",t.id,"",t.title)+'</td><td class="c-due">'+due+dueHint(t)+'</td><td class="c-act">'+editBtn("data-edittodo",t.id)+"</td></tr>";
 }
 function renderTodo(){
   const open=state.todos.filter(t=>!t.done),done=state.todos.filter(t=>t.done);
   if(ui.todoFilter==="done"&&!done.length)ui.todoFilter="open";
   const toEvent=dayDiff(todayISO(),DAY_DATE.d1);
-  let h=banners()+'<div class="page-head"><div><h2>待辦</h2>'+(toEvent>0?'<p class="page-sub">距離會議還有 '+toEvent+" 天</p>":"")+'</div><span class="spacer"></span><button type="button" class="no-print" data-print="1">列印</button></div>';
+  let h=banners()+'<div class="page-head"><div><h1 tabindex="-1">待辦</h1>'+(toEvent>0?'<p class="page-sub">距離會議還有 '+toEvent+" 天</p>":"")+'</div><span class="spacer"></span><button type="button" class="no-print" data-print="1">列印</button></div>';
   if(mode.canEdit)h+='<section class="todo-add"><textarea id="todoNew" rows="1" aria-label="新增待辦" placeholder="新增待辦，按 Enter。可一次貼上多行，每行一項"></textarea><button type="button" class="primary" id="todoAdd">新增</button></section><p class="tip no-print">發布後所有人都看得到，請勿填寫電話或其他個資。</p>';
   if(!state.todos.length){
     h+='<section class="blank"><p>'+(mode.canEdit?"還沒有待辦。在上方輸入第一項，之後可以指派負責人和設定期限。":"目前還沒有待辦。")+"</p></section>";
@@ -1129,9 +1168,9 @@ function renderTodo(){
   }
   const f=(k,l,n)=>'<button type="button" data-todofilter="'+k+'" class="'+(ui.todoFilter===k?"on":"")+'">'+l+' <span class="counter">'+n+"</span></button>";
   h+='<div class="toolbar"><div class="subtabs" role="group" aria-label="篩選待辦">'+f("open","未完成",open.length)+f("done","已完成",done.length)+f("all","全部",state.todos.length)+"</div></div>";
-  h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="c-check"><span class="sr">完成</span></th><th>事項</th><th>負責人</th><th>期限</th><th></th></tr></thead>';
+  h+='<div class="tbl-wrap"><table class="tbl" aria-label="待辦清單"><thead><tr><th scope=col class="c-check"><span class="sr">完成</span></th><th scope=col>事項</th><th scope=col>負責人</th><th scope=col>期限</th><th scope=col><span class=sr>操作</span></th></tr></thead>';
   const byDue=(a,b)=>(a.due||"9999").localeCompare(b.due||"9999");
-  const group=(title,rows)=>rows.length?'<tbody><tr class="group"><th colspan="5">'+esc(title)+"<span>"+rows.length+"</span></th></tr>"+rows.map(todoRow).join("")+"</tbody>":"";
+  const group=(title,rows)=>rows.length?'<tbody><tr class="group"><th scope=rowgroup colspan="5">'+esc(title)+"<span>"+rows.length+"</span></th></tr>"+rows.map(todoRow).join("")+"</tbody>":"";
   if(ui.todoFilter!=="done"){
     const today=todayISO(),sorted=[...open].sort(byDue);
     h+=group("已逾期",sorted.filter(todoOverdue))
@@ -1154,17 +1193,17 @@ function addTodos(raw){
   return lines.length;
 }
 function renderNotes(){
-  let h=banners()+'<div class="page-head"><h2>備註</h2></div>';
+  let h=banners()+'<div class="page-head"><h1 tabindex="-1">備註</h1></div>';
   if(mode.canEdit){
-    h+='<div class="notes-grid"><section class="note-box"><div class="note-head"><h3>公開備註</h3>'+(state.notes.trim()?'<button type="button" class="ghost" id="moveNotes">移到我的筆記</button>':"")+'</div><p class="tip">'+(mode.hosted?"發布後所有人都看得到，請勿填寫電話或其他個資。":"匯出 Excel 時會一起帶出。")+'</p><textarea id="noteShared" data-board="notes" aria-label="公開備註" placeholder="輸入備註">'+esc(state.notes)+"</textarea></section>"
-      +'<section class="note-box"><h3>我的筆記</h3><p class="tip">不會發布，也不會匯出，只存在這個瀏覽器。</p><textarea id="notePrivate" data-board="privateNotes" aria-label="我的筆記" placeholder="輸入筆記">'+esc(state.privateNotes)+"</textarea></section></div>";
+    h+='<div class="notes-grid"><section class="note-box"><div class="note-head"><h2>公開備註</h2>'+(state.notes.trim()?'<button type="button" class="ghost" id="moveNotes">移到我的筆記</button>':"")+'</div><p class="tip">'+(mode.hosted?"發布後所有人都看得到，請勿填寫電話或其他個資。":"匯出 Excel 時會一起帶出。")+'</p><textarea id="noteShared" data-board="notes" aria-label="公開備註" placeholder="輸入備註">'+esc(state.notes)+"</textarea></section>"
+      +'<section class="note-box"><h2>我的筆記</h2><p class="tip">不會發布，也不會匯出，只存在這個瀏覽器。</p><textarea id="notePrivate" data-board="privateNotes" aria-label="我的筆記" placeholder="輸入筆記">'+esc(state.privateNotes)+"</textarea></section></div>";
   }else h+=state.notes.trim()?'<section class="note-view">'+esc(state.notes)+"</section>":'<section class="blank"><p>目前沒有備註。</p></section>';
   $("main").innerHTML=h;
 }
 function renderRoom(){
   const room=roomOf(ui.room),roles=state.roles[room.k]||[],list=state.sessions.filter(s=>s.room===room.k),one=roles.length===1?roles[0]:null;
-  const cols=mode.canEdit?6:5,blankCheck=mode.canEdit?'<td class="c-check"></td>':"";
-  let h=banners()+'<div class="page-head"><div><h2>'+esc(room.name)+'</h2><p class="page-sub">'+esc(room.place)+'</p></div><span class="spacer"></span>';
+  const blankCheck=mode.canEdit?'<td class="c-check"></td>':"";
+  let h=banners()+'<div class="page-head"><div><h1 tabindex="-1">'+esc(room.name)+'</h1><p class="page-sub">'+esc(room.place)+'</p></div><span class="spacer"></span>';
   if(mode.canEdit)h+='<details class="menu"><summary>更多</summary><div class="menu-list"><button type="button" data-editarea="'+esc(room.k)+'">編輯區域</button><button type="button" id="editRoles">場次職務欄位</button></div></details>'
     +'<button type="button" class="primary" data-addjob="1" data-job-room="'+esc(room.k)+'">新增工作</button>';
   h+="</div>";
@@ -1173,11 +1212,13 @@ function renderRoom(){
     h+='<dl class="props"><dt>負責人</dt><dd><div>'+chipsHtml("lead",room.k,"",room.name+" 負責人",leadNeed(room.k))+"</div>"+statusHtml("lead",room.k,state.leadStatus[room.k],has)+"</dd></dl>";
   }
   const free=state.jobs.filter(j=>!j.linkId&&j.room===room.k);
+  const showPeople=roles.length>0||free.length>0||list.some(s=>state.jobs.some(j=>j.linkId===s.id));
+  const cols=(mode.canEdit?1:0)+(showPeople?5:3);
   if(list.length||free.length){
-    h+='<div class="tbl-wrap"><table class="tbl"><thead><tr>'+selHead()+"<th>時間</th><th>場次與工作</th><th>"+esc(one?one.name:"負責人")+"</th><th>通知</th><th></th></tr></thead>";
+    h+='<div class="tbl-wrap"><table class="tbl" aria-label="'+esc(room.name)+' 場次"><thead><tr>'+selHead()+"<th scope=col>時間</th><th scope=col>場次與工作</th>"+(showPeople?"<th scope=col>"+esc(one?one.name:"負責人")+"</th><th scope=col>通知狀態</th>":"")+"<th scope=col><span class=sr>操作</span></th></tr></thead>";
     const subJob=j=>{
       const has=names(j.people).length>0;
-      return '<tr class="sub">'+blankCheck+'<td class="c-time"></td><td class="c-title"><b>'+esc(j.title)+"</b>"+(j.note?'<small class="note">'+esc(j.note)+"</small>":"")+'</td><td class="c-people">'+chipsHtml("job",j.id,"",j.title,jobNeed(j))+'</td><td class="c-status">'+statusHtml("job",j.id,j.status,has)+'</td><td class="c-act">'+editBtn("data-editjob",j.id)+"</td></tr>";
+      return '<tr class="sub">'+blankCheck+'<td class="c-time"></td><th scope=row class="c-title"><b>'+esc(j.title)+"</b>"+(j.note?'<small class="note">'+esc(j.note)+"</small>":"")+'</th><td class="c-people">'+chipsHtml("job",j.id,"",j.title,jobNeed(j))+'</td><td class="c-status">'+statusHtml("job",j.id,j.status,has)+'</td><td class="c-act">'+editBtn("data-editjob",j.id)+"</td></tr>";
     };
     for(const d of DAYS){
       const rows=list.filter(s=>s.day===d.k).sort(byTime);
@@ -1185,20 +1226,20 @@ function renderRoom(){
       h+="<tbody>"+groupRow(d.k,d.name,rows.length,cols);
       for(const s of rows){
         const has=roles.some(r=>names(s.assign[r.id]).length);
-        h+='<tr id="row-'+esc(s.id)+'"'+(ui.sel.has(s.id)?' class="selected"':"")+">"+selBox(s.id,d.k,s.title)+'<td class="c-time">'+timeRange(s)+'</td><td class="c-title"><span class="t-strong">'+esc(s.title)+"</span>"+(s.sub?"<small>"+esc(s.sub)+"</small>":"")+(s.note?'<small class="note">'+esc(s.note)+"</small>":"")+"</td>"
-          +'<td class="c-people">'+(one?chipsHtml("assign",s.id,one.id,s.title+" "+one.name):"")+"</td>"
-          +'<td class="c-status">'+(roles.length?statusHtml("session",s.id,s.status,has):"")+"</td>"
+        h+='<tr id="row-'+esc(s.id)+'"'+(ui.sel.has(s.id)?' class="selected"':"")+">"+selBox(s.id,d.k,s.title)+'<td class="c-time">'+timeRange(s)+'</td><th scope=row class="c-title"><span class="t-strong">'+esc(s.title)+"</span>"+(s.sub?"<small>"+esc(s.sub)+"</small>":"")+(s.note?'<small class="note">'+esc(s.note)+"</small>":"")+"</th>"
+          +(showPeople?'<td class="c-people">'+(one?chipsHtml("assign",s.id,one.id,s.title+" "+one.name):"")+"</td>"
+          +'<td class="c-status">'+(roles.length?statusHtml("session",s.id,s.status,has):"")+"</td>":"")
           +'<td class="c-act">'+(mode.canEdit?'<button type="button" class="ghost row-act" data-addjob="1" data-link="'+esc(s.id)+'">新增工作</button>'+editBtn("data-edit",s.id):"")+"</td></tr>";
-        if(roles.length>1)for(const r of roles)h+='<tr class="sub">'+blankCheck+'<td class="c-time"></td><td class="c-title"><b>'+esc(r.name)+'</b></td><td class="c-people">'+chipsHtml("assign",s.id,r.id,s.title+" "+r.name)+'</td><td class="c-status"></td><td class="c-act"></td></tr>';
+        if(roles.length>1)for(const r of roles)h+='<tr class="sub">'+blankCheck+'<td class="c-time"></td><th scope=row class="c-title"><b>'+esc(r.name)+'</b></th><td class="c-people">'+chipsHtml("assign",s.id,r.id,s.title+" "+r.name)+'</td><td class="c-status"></td><td class="c-act"></td></tr>';
         h+=state.jobs.filter(j=>j.linkId===s.id).map(subJob).join("");
       }
       h+="</tbody>";
     }
     if(free.length){
-      h+='<tbody><tr class="group"><th colspan="'+cols+'">其他工作<span>'+free.length+"</span></th></tr>";
+      h+='<tbody><tr class="group"><th scope=rowgroup colspan="'+cols+'">其他工作<span>'+free.length+"</span></th></tr>";
       h+=free.map(j=>{
         const i=jobInfo(j),has=names(j.people).length>0;
-        return "<tr>"+blankCheck+'<td class="c-time"><small>'+esc(dayOf(i.day).short)+"</small>"+timeRange(i)+'</td><td class="c-title"><b>'+esc(j.title)+"</b>"+(j.note?'<small class="note">'+esc(j.note)+"</small>":"")+'</td><td class="c-people">'+chipsHtml("job",j.id,"",j.title,jobNeed(j))+'</td><td class="c-status">'+statusHtml("job",j.id,j.status,has)+'</td><td class="c-act">'+editBtn("data-editjob",j.id)+"</td></tr>";
+        return "<tr>"+blankCheck+'<td class="c-time"><small>'+esc(dayOf(i.day).short)+"</small>"+timeRange(i)+'</td><th scope=row class="c-title"><b>'+esc(j.title)+"</b>"+(j.note?'<small class="note">'+esc(j.note)+"</small>":"")+'</th><td class="c-people">'+chipsHtml("job",j.id,"",j.title,jobNeed(j))+'</td><td class="c-status">'+statusHtml("job",j.id,j.status,has)+'</td><td class="c-act">'+editBtn("data-editjob",j.id)+"</td></tr>";
       }).join("")+"</tbody>";
     }
     h+="</table></div>";
@@ -1209,7 +1250,7 @@ function renderRoom(){
 }
 function areaTr(r){
   const sessN=state.sessions.filter(s=>s.room===r.k).length,js=jobsInRoom(r.k),openJ=js.filter(jobShort).length;
-  const name='<td class="c-title"><button type="button" class="link" data-open-room="'+esc(r.k)+'">'+esc(r.name)+"</button></td>";
+  const name='<th scope=row class="c-title"><button type="button" class="link" data-open-room="'+esc(r.k)+'">'+esc(r.name)+"</button></th>";
   const place='<td class="c-meta">'+esc(r.place)+"</td>";
   const nums='<td class="c-num">'+sessN+'</td><td class="c-num">'+js.length+(openJ?' <span class="warn">('+openJ+" 缺人)</span>":"")+"</td>";
   if(r.lead){
@@ -1230,7 +1271,7 @@ function renderOverview(){
   const others=ROOMS.filter(r=>r.k!=="bus").map(r=>({r,gap:(q=>q.need-q.done)(sumProgress(state.sessions.filter(s=>s.room===r.k)))})).filter(x=>x.gap>0);
   const bad=mode.canEdit?CTX.bad.size:0,todoOpen=state.todos.filter(x=>!x.done).length,todoLate=state.todos.some(todoOverdue);
   const stat=(label,val,attrs,cls)=>'<button type="button" class="stat'+(val&&cls?" "+cls:"")+'" '+attrs+(val?"":" disabled")+'><span class="stat-label">'+esc(label)+'</span><span class="stat-value">'+val+"</span></button>";
-  let h=banners()+'<div class="page-head"><h2>各區負責人</h2><span class="spacer"></span>'+(mode.canEdit?'<button type="button" data-addarea="1">新增區域</button>':"")+"</div>";
+  let h=banners()+'<div class="page-head"><h1 tabindex="-1">各區負責人</h1><span class="spacer"></span>'+(mode.canEdit?'<button type="button" data-addarea="1">新增區域</button>':"")+"</div>";
   h+='<div class="stats"><div class="stat" style="cursor:default"><span class="stat-label">已指派</span><span class="stat-value">'+tp.done+" <small>/ "+tp.need+"</small></span></div>"
     +stat("區域缺人",openAreas,'data-stat="areas"',"warn")
     +stat("隨車缺人",seats,'data-stat="bus"',"warn")
@@ -1243,8 +1284,8 @@ function renderOverview(){
   const f=(k,l,n)=>'<button type="button" data-areafilter="'+k+'" class="'+(ui.areaFilter===k?"on":"")+'">'+l+' <span class="counter">'+n+"</span></button>";
   h+='<div class="toolbar"><div class="subtabs" role="group" aria-label="篩選區域">'+f("all","全部",ROOMS.length)+(openN?f("open","缺人",openN):"")+"</div></div>";
   const hall=["main","A","B","C","D","P"],pass=r=>ui.areaFilter==="all"||areaIsOpen(r);
-  const group=(title,rows)=>rows.length?'<tbody><tr class="group"><th colspan="6">'+esc(title)+"<span>"+rows.length+"</span></th></tr>"+rows.map(areaTr).join("")+"</tbody>":"";
-  h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>區域</th><th>地點</th><th>負責人</th><th class="c-num">場次</th><th class="c-num">工作</th><th>通知</th></tr></thead>'
+  const group=(title,rows)=>rows.length?'<tbody><tr class="group"><th scope=rowgroup colspan="6">'+esc(title)+"<span>"+rows.length+"</span></th></tr>"+rows.map(areaTr).join("")+"</tbody>":"";
+  h+='<div class="tbl-wrap"><table class="tbl" aria-label="各區負責人"><thead><tr><th scope=col>區域</th><th scope=col>地點</th><th scope=col>負責人</th><th scope=col class="c-num">場次</th><th scope=col class="c-num">工作</th><th scope=col>通知狀態</th></tr></thead>'
     +group("會議廳與海報",ROOMS.filter(r=>hall.includes(r.k)&&pass(r)))
     +group("現場服務與交通",ROOMS.filter(r=>!hall.includes(r.k)&&pass(r)))+"</table></div>";
   $("main").innerHTML=h;
@@ -1271,10 +1312,18 @@ function eachField(fn){
   for(const j of state.jobs)j.people=mapNames(j.people,fn);
   for(const x of state.todos)x.people=mapNames(x.people,fn);
 }
+function askConfirm(title,text,yes){
+  return new Promise(res=>{
+    const d=$("dlgConfirm");
+    $("cTitle").textContent=title;$("cText").textContent=text;$("cYes").textContent=yes||"確定";
+    const done=v=>{$("cYes").onclick=$("cNo").onclick=d.oncancel=null;d.close();res(v)};
+    $("cYes").onclick=()=>done(true);
+    $("cNo").onclick=()=>done(false);
+    d.oncancel=e=>{e.preventDefault();done(false)};
+    d.showModal();
+  });
+}
 function renamePerson(oldName,newName){
-  if(state.people[newName]||allTasks().has(newName)){
-    if(!window.confirm("名單裡已經有「"+newName+"」，要把「"+oldName+"」併過去嗎？"))return false;
-  }
   eachField(x=>x===oldName?newName:x);
   const a=state.people[oldName]||{},b=state.people[newName]||{};
   delete state.people[oldName];
@@ -1283,11 +1332,11 @@ function renamePerson(oldName,newName){
   return true;
 }
 function removePerson(n){
-  const c=(allTasks().get(n)||[]).length;
-  if(!window.confirm("確定移除「"+n+"」？"+(c?"這個人目前的 "+c+" 項工作會變成未指派。":"")))return;
+  const before=JSON.stringify(state),c=(allTasks().get(n)||[]).length;
   eachField(x=>x===n?null:x);
   delete state.people[n];
-  save();render();
+  save();refresh();
+  toast("已移除「"+n+"」"+(c?"，原本的 "+c+" 項工作變成未指派":"")+"。",undoFrom(before));
 }
 function taskTitle(t){
   if(t.s.isLead)return roomOf(t.s.room).name+" 負責人";
@@ -1354,7 +1403,7 @@ function renderPeople(){
     if(key==="todo")return dir*(a.todos.length-b.todos.length)||name(a,b);
     return (b.cf?1:0)-(a.cf?1:0)||name(a,b);
   });
-  let h=banners()+'<div class="page-head no-print"><h2>人員</h2><span class="page-sub">'+total+' 人</span><span class="spacer"></span><button type="button" data-print="1">列印工作單</button></div><p class="print-title print-only"><b>TAAI 2026 個人工作單</b><span>'+esc(state.updatedAt?"資料更新 "+fmtTime(state.updatedAt):"")+"</span></p>";
+  let h=banners()+'<div class="page-head no-print"><h1 tabindex="-1">人員</h1><span class="page-sub">'+total+' 人</span><span class="spacer"></span><button type="button" data-print="1">列印工作單</button></div><p class="print-title print-only"><b>TAAI 2026 個人工作單</b><span>'+esc(state.updatedAt?"資料更新 "+fmtTime(state.updatedAt):"")+"</span></p>";
   if(mode.canEdit)h+='<section class="add-people"><textarea id="bulk" rows="1" aria-label="新增人員" placeholder="新增人員，多人用頓號或換行分開"></textarea><button type="button" id="bulkAdd">新增</button></section>';
   if(!total){
     h+='<section class="blank"><p>還沒有人員。指派工作時輸入的姓名也會自動出現在這裡。</p></section>';
@@ -1449,6 +1498,7 @@ function render(){
   }finally{rendering=false}
   applyMode();
   syncSel();
+  updateStick();
   $("peopleList").innerHTML=[...map.keys()].sort((a,b)=>a.localeCompare(b,"zh-Hant")).map(n=>'<option value="'+esc(n)+'">').join("");
   if(ui.message){if(!ui.msgErr)toast(ui.message);ui.message=null}
 }
@@ -1473,7 +1523,16 @@ function go(view,room){
   if(location.hash.slice(1)===h){parseHash();refresh()}
   else location.hash=h;
 }
-window.addEventListener("hashchange",()=>{parseHash();render();window.scrollTo(0,0)});
+function focusTitle(){
+  const el=$("main").querySelector("h1")||$("main");
+  el.focus({preventScroll:true});
+}
+window.addEventListener("hashchange",()=>{parseHash();render();window.scrollTo(0,0);focusTitle()});
+function updateStick(){
+  const top=document.querySelector(".top"),tabs=$("tabs"),tabsH=getComputedStyle(tabs).display==="none"?0:tabs.offsetHeight;
+  document.documentElement.style.setProperty("--stick",(top.offsetHeight+tabsH)+"px");
+}
+window.addEventListener("resize",updateStick);
 
 // 姓名標籤的操作
 let pointerDown=false,pendingAfter=null;
@@ -1587,7 +1646,14 @@ $("main").addEventListener("change",e=>{
   if(el.dataset.rename!==undefined){
     const o=el.dataset.rename,v=el.value.trim();
     if(!v||v===o){el.value=o;return}
-    if(renamePerson(o,v)){ui.openPeople.delete(o);ui.openPeople.add(v);save();refresh()}else el.value=o;
+    const go2=()=>{renamePerson(o,v);ui.openPeople.delete(o);ui.openPeople.add(v);save();refresh()};
+    if(state.people[v]||allTasks().has(v)){
+      const before=JSON.stringify(state);
+      askConfirm("合併人員","名單裡已經有「"+v+"」。要把「"+o+"」的工作併過去嗎？","合併").then(ok=>{
+        if(!ok){el.value=o;return}
+        go2();toast("已把「"+o+"」併入「"+v+"」。",undoFrom(before));
+      });
+    }else go2();
   }
 });
 $("main").addEventListener("keydown",e=>{
@@ -1698,9 +1764,10 @@ function openTask(id){
 $("fCancel").addEventListener("click",()=>$("dlgTask").close());
 $("fDelete").addEventListener("click",()=>{
   const s=state.sessions.find(x=>x.id===editing);if(!s)return;
-  if(!window.confirm("確定刪除「"+s.title+"」？這一列已填的人員與備註會一起刪除，對應到這裡的工作會保留並改為自訂時間。"))return;
-  state.jobs.filter(j=>j.linkId===s.id).forEach(j=>{j.linkId=null;j.room=s.room;j.day=s.day;j.start=s.start;j.end=s.end});
-  state.sessions=state.sessions.filter(x=>x.id!==editing);$("dlgTask").close();save();render();
+  const before=JSON.stringify(state),linked=state.jobs.filter(j=>j.linkId===s.id);
+  linked.forEach(j=>{j.linkId=null;j.room=s.room;j.day=s.day;j.start=s.start;j.end=s.end});
+  state.sessions=state.sessions.filter(x=>x.id!==editing);$("dlgTask").close();save();refresh();
+  toast("已刪除「"+s.title+"」"+(linked.length?"，"+linked.length+" 項工作改為自訂時間":"")+"。",undoFrom(before));
 });
 $("formTask").addEventListener("submit",e=>{
   const v={title:$("fTitle").value.trim(),sub:$("fSub").value.trim(),room:$("fRoom").value,day:$("fDay").value,start:$("fStart").value,end:$("fEnd").value,note:$("fNote").value.trim()};
@@ -1764,8 +1831,9 @@ $("jLink").addEventListener("change",toggleJobCustom);
 $("jCancel").addEventListener("click",()=>$("dlgJob").close());
 $("jDelete").addEventListener("click",()=>{
   const j=state.jobs.find(x=>x.id===editingJob);if(!j)return;
-  if(!window.confirm("確定刪除工作「"+j.title+"」？"))return;
+  const before=JSON.stringify(state);
   state.jobs=state.jobs.filter(x=>x!==j);$("dlgJob").close();save();refresh();
+  toast("已刪除工作「"+j.title+"」。",undoFrom(before));
 });
 $("formJob").addEventListener("submit",e=>{
   const typed=$("chip-draft-job");if(typed)commitChip(typed);
@@ -1895,10 +1963,11 @@ $("aDelete").addEventListener("click",()=>{
   const k=editingArea,r=roomOf(k);
   const used=state.sessions.filter(s=>s.room===k).length+jobsInRoom(k).length;
   if(used){$("aErr").hidden=false;$("aErr").textContent="這個區域還有 "+used+" 項工作，請先刪除或改到其他區域。";return}
-  if(!window.confirm("確定刪除區域「"+r.name+"」？這裡填的負責人也會移除。"))return;
+  const before=JSON.stringify(state);
   state.areas=state.areas.filter(a=>a.k!==k);
   delete state.leads[k];delete state.leadStatus[k];delete state.leadNeeds[k];delete state.roles[k];
   $("dlgArea").close();save();go("overview");
+  toast("已刪除區域「"+r.name+"」。",undoFrom(before));
 });
 $("formArea").addEventListener("submit",e=>{
   const name=$("aName").value.trim(),place=$("aPlace").value.trim(),err=m=>{e.preventDefault();$("aErr").hidden=false;$("aErr").textContent=m};
@@ -2041,13 +2110,13 @@ $("btnImport").addEventListener("click",()=>$("fileImport").click());
 $("fileImport").addEventListener("change",e=>{
   const f=e.target.files[0];if(!f)return;
   const rd=new FileReader();
-  rd.onload=()=>{
+  rd.onload=async()=>{
     try{
       const p=JSON.parse(rd.result);
       if(!valid(p))throw new Error("format");
-      if(!window.confirm("還原會用備份檔「"+f.name+"」覆蓋目前所有內容，確定嗎？"))return;
+      if(!await askConfirm("還原備份","會用「"+f.name+"」取代目前這個瀏覽器的所有內容。還原後要按「發布」才會更新線上版。","還原"))return;
       state=normalize(p);saveNow();ui.message="已從「"+f.name+"」還原。";ui.msgErr=false;
-    }catch(err){ui.message="這個檔案不是派工表備份，內容沒有變更。請選擇按「備份」存下的 .json 檔。";ui.msgErr=true}
+    }catch(err){ui.message="這個檔案不是派工表備份，內容沒有變更。請選擇用「備份資料」存下的 .json 檔。";ui.msgErr=true}
     render();
   };
   rd.readAsText(f);e.target.value="";
@@ -2297,7 +2366,7 @@ $("btnPublish").addEventListener("click",()=>publish(false));
 document.addEventListener("click",e=>{document.querySelectorAll("details.menu[open]").forEach(m=>{if(!m.contains(e.target)||e.target.closest(".menu-list"))m.open=false})});
 $("btnLogin").addEventListener("click",async()=>{
   if(mode.canEdit){
-    if(publishable(state)!==mode.remoteText&&!window.confirm("還有未發布的變更，登出後別人看不到。確定登出嗎？"))return;
+    if(publishable(state)!==mode.remoteText&&!await askConfirm("還有修改尚未發布","登出後修改仍保留在這個瀏覽器，但其他人看不到。","登出"))return;
     saveNow();mode.canEdit=false;mode.token=null;try{localStorage.removeItem(TOKEN_KEY)}catch(e){}
     await loadHosted();return;
   }
@@ -2316,6 +2385,15 @@ $("formLogin").addEventListener("submit",async e=>{
   try{localStorage.setItem(TOKEN_KEY,mode.token)}catch(err){}
   mode.canEdit=true;$("fToken").value="";$("dlgLogin").close();
   await loadHosted();
+});
+$("skipLink").addEventListener("click",focusTitle);
+document.querySelectorAll("dialog").forEach(d=>d.addEventListener("close",()=>{
+  setTimeout(()=>{if(document.activeElement===document.body&&!document.querySelector("dialog[open]"))focusTitle()},0);
+}));
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  const m=document.querySelector("details.menu[open]");
+  if(m){m.open=false;m.querySelector("summary").focus()}
 });
 let printOpened=[];
 window.addEventListener("beforeprint",()=>{
