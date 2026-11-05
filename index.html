@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TAAI 2026 派工表</title>
+<style>
+/* 版面：首頁是一區一張卡片，點進去才看場次；次要功能收進「匯出」選單。 */
+:root{
+  --bg:#f4f6f4;--surface:#ffffff;--surface2:#edf1ee;--line:#dde3df;--fg:#1a2420;--muted:#66736d;
+  --accent:#20634f;--accent-fg:#ffffff;--accent-soft:#e0efe9;
+  --good:#1b7350;--good-soft:#dff3e9;--warn:#94600d;--warn-soft:#fbf0d9;--bad:#b4362e;--bad-soft:#fbe6e4;
+  --sans:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#121715;--surface:#1b211e;--surface2:#262e2a;--line:#323b36;--fg:#e9eeeb;--muted:#9aa7a0;
+  --accent:#7cc9ae;--accent-fg:#0e1a15;--accent-soft:#1f3a30;
+  --good:#7bd3aa;--good-soft:#1b3a2c;--warn:#e7bb68;--warn-soft:#3e321a;--bad:#f1948c;--bad-soft:#47231f;
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover{background:var(--surface2)}
+button:disabled{cursor:default}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+button.primary:hover{opacity:.9;background:var(--accent)}
+button.primary:disabled{opacity:.45}
+button.danger{color:var(--bad);border-color:var(--bad)}
+button.ghost{border-color:transparent;color:var(--muted);padding:4px 8px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+header.top{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px max(16px,calc((100vw - 1040px)/2))}
+.brand{font-size:17px;font-weight:700;margin:0}
+.spacer{flex:1}
+.actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#saved,#total{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tabs{display:flex;gap:18px;padding:0 max(16px,calc((100vw - 1040px)/2))}
+.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:4px 0 9px;color:var(--muted)}
+.tabs button.on{color:var(--fg);border-bottom-color:var(--accent);font-weight:600}
+.menu{position:relative}
+.menu summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+.menu summary::-webkit-details-marker{display:none}
+.menu summary:hover{background:var(--surface2)}
+.menu-list{position:absolute;right:0;top:calc(100% + 4px);z-index:6;min-width:150px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px;display:grid;box-shadow:0 8px 24px rgba(10,20,15,.14)}
+.menu-list button{border:0;text-align:left;padding:7px 10px;border-radius:6px}
+main{padding:20px 16px 48px;max-width:1072px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+main section{min-width:0}
+.banner{padding:9px 13px;border-radius:8px;background:var(--accent-soft);color:var(--accent)}
+.banner.err{background:var(--bad-soft);color:var(--bad)}
+.head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+h2{margin:0;font-size:22px}
+h3{margin:0 0 8px;font-size:14px;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)}
+.tip{font-size:13px;color:var(--muted);margin:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px 16px;display:grid;gap:10px;align-content:start}
+.card-top{display:flex;width:100%;align-items:flex-start;justify-content:space-between;gap:8px;border:0;padding:0;text-align:left;background:none}
+.card-top:hover{background:none}
+.card-top:hover .card-name{color:var(--accent)}
+.card-name{display:block;font-size:17px;font-weight:700}
+.card-place{display:block;font-size:13px;color:var(--muted)}
+.chev{color:var(--muted);font-size:18px;line-height:1.2}
+.lead-row{display:flex;align-items:center;gap:8px}
+.lead-row input{flex:1;min-width:0;background:var(--bg);border:1px solid transparent;border-radius:8px;padding:7px 10px;font-weight:600}
+.lead-row input::placeholder{font-weight:400;color:var(--muted)}
+.lead-row input:hover,.lead-row input:focus{border-color:var(--line)}
+input.conflict{background:var(--bad-soft)!important;border-color:var(--bad)!important}
+.statuspill{flex:none;border:0;border-radius:99px;font-size:12px;padding:3px 10px;background:var(--surface2);color:var(--muted);white-space:nowrap}
+.statuspill.s1{background:var(--warn-soft);color:var(--warn)}
+.statuspill.s2{background:var(--good-soft);color:var(--good)}
+.statuspill:disabled{opacity:1}
+.bus-count{font-weight:600;padding:7px 0}
+.leadbox{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px;max-width:520px}
+.lead-label{flex:none;font-size:13px;color:var(--muted)}
+.back{justify-self:start;margin-left:-8px}
+.scroll{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+th{font-size:12.5px;font-weight:500;color:var(--muted);white-space:nowrap}
+td.time{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;width:1%}
+td.task{min-width:190px}
+td.task b{font-weight:600}
+td.task small{display:block;color:var(--muted);line-height:1.35}
+td input,td select{width:100%;min-width:100px;background:var(--bg);border:1px solid transparent;border-radius:7px;padding:6px 9px}
+td input:hover,td input:focus,td select:hover{border-color:var(--line)}
+td.note input{background:transparent}
+td.note{min-width:130px}
+td.st{min-width:92px}
+td.act{width:1%}
+tr.flash td{background:var(--accent-soft)}
+.pill{display:inline-block;font-size:12px;border-radius:99px;padding:1px 9px;background:var(--surface2);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.person{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.person summary{cursor:pointer;padding:10px 14px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.person .body{padding:2px 14px 14px;display:grid;gap:10px}
+.fields{display:flex;flex-wrap:wrap;gap:8px}
+.fields label{display:grid;gap:3px;font-size:12.5px;color:var(--muted);flex:1 1 170px}
+.fields input,.fields select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;color:var(--fg);font-size:14px}
+.tasks{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:14px}
+.tasks li{font-variant-numeric:tabular-nums}
+.tasks li.conflict{color:var(--bad)}
+.stack{display:grid;gap:8px}
+.bulk summary{cursor:pointer;color:var(--muted);font-size:14px}
+.bulk[open] summary{margin-bottom:8px}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--fg);width:min(480px,calc(100vw - 32px));padding:20px}
+dialog::backdrop{background:rgba(10,20,15,.45)}
+dialog form{display:grid;gap:12px}
+.row-end{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.role-row{display:flex;gap:6px}
+.role-row input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.ro .edit-only{display:none!important}
+.ro input:disabled,.ro select:disabled{opacity:1;-webkit-text-fill-color:var(--fg);color:var(--fg);background:transparent;padding-left:0;appearance:none;-webkit-appearance:none}
+.ro .note input:placeholder-shown{visibility:hidden}
+.ro input.conflict{background:transparent!important;border-color:transparent!important}
+.ro .pill.bad,.ro .tasks li.conflict{display:revert}
+.ro .tabs .pill.bad{display:none}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <h1 class="brand">TAAI 2026 派工表</h1>
+    <span id="total"></span>
+    <span class="spacer"></span>
+    <span id="saved"></span>
+    <div class="actions">
+      <button id="btnPublish" class="primary" type="button" hidden>發布更新</button>
+      <details class="menu" id="menu"><summary>匯出</summary><div class="menu-list">
+        <button id="btnXlsx" type="button">Excel</button>
+        <button id="btnCsv" type="button">CSV</button>
+        <button id="btnJson" class="edit-only" type="button">備份資料</button>
+        <button id="btnImport" class="edit-only" type="button">還原備份</button>
+      </div></details>
+      <button id="btnLogin" class="ghost" type="button" hidden>編輯登入</button>
+      <input id="fileImport" type="file" accept=".json,application/json" hidden>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs" aria-label="切換檢視"></nav>
+</header>
+<main id="main"></main>
+<datalist id="peopleList"></datalist>
+
+<dialog id="dlgTask"><form method="dialog" id="formTask">
+  <h3 id="dlgTaskTitle">編輯工作</h3>
+  <div class="fields">
+    <label style="flex-basis:100%">名稱<input id="fTitle" required maxlength="100"></label>
+    <label style="flex-basis:100%">補充說明<input id="fSub" maxlength="150"></label>
+    <label>廳別<select id="fRoom"></select></label>
+    <label>日期<select id="fDay"></select></label>
+    <label>開始<input id="fStart" type="time" required></label>
+    <label>結束<input id="fEnd" type="time" required></label>
+  </div>
+  <p class="tip" id="fErr" hidden></p>
+  <div class="row-end">
+    <button type="button" class="danger" id="fDelete">刪除這項</button>
+    <span class="spacer"></span>
+    <button type="button" id="fCancel">取消</button>
+    <button type="submit" class="primary">儲存</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgLogin"><form method="dialog" id="formLogin">
+  <h3>編輯登入</h3>
+  <p class="tip">請貼上只授權給這個 repo 的 GitHub fine-grained token（Contents: Read and write）。它只會存在這個瀏覽器裡，共用電腦上用完請登出。</p>
+  <div class="fields"><label style="flex-basis:100%">GitHub token<input id="fToken" type="password" autocomplete="off" required></label></div>
+  <p class="tip" id="loginErr" hidden></p>
+  <div class="row-end"><button type="button" id="loginCancel">取消</button><button type="submit" class="primary">登入</button></div>
+</form></dialog>
+
+<dialog id="dlgRoles"><form method="dialog" id="formRoles">
+  <h3 id="dlgRolesTitle">職務設定</h3>
+  <p class="tip">這裡的職務會成為此廳別派工表的欄位。刪除職務會一併清除該欄已填的人員。</p>
+  <div class="stack" id="roleRows"></div>
+  <div><button type="button" id="roleAdd">新增職務</button></div>
+  <div class="row-end">
+    <button type="button" id="rolesCancel">取消</button>
+    <button type="submit" class="primary">儲存</button>
+  </div>
+</form></dialog>
+
+<script>
+"use strict";
+const KEY="taai2026-dispatch-v1";
+const ROOMS=[
+  {k:"main",name:"大會廳",place:"5F 麗山廳",lead:true},
+  {k:"A",name:"會議室 A",place:"2F 麗景廳 A 廳",lead:true},
+  {k:"B",name:"會議室 B",place:"2F 麗景廳 B 廳",lead:true},
+  {k:"C",name:"會議室 C",place:"2F 麗泉廳 C1",lead:true},
+  {k:"D",name:"會議室 D",place:"7F 高峰廳",lead:true},
+  {k:"P",name:"海報區",place:"5F 麗山廳開放中庭",lead:true},
+  {k:"reg",name:"報到",place:"地點待補",lead:true,noPlace:true},
+  {k:"all",name:"茶敘午餐",place:"地點待補",lead:true,noPlace:true},
+  {k:"bus",name:"遊覽車",place:"接駁車隨車",noPlace:true}
+];
+const DAYS=[{k:"d1",name:"第 1 天 · 11/20（五）",short:"11/20（五）"},{k:"d2",name:"第 2 天 · 11/21（六）",short:"11/21（六）"},{k:"x",name:"會前／會後",short:"會前／會後"}];
+const STATUS=["未通知","已通知","已確認"];
+const DEFAULT_ROLES={bus:["隨車人員"]};
+const DEFAULT_LEADS={main:"",A:"國際學院助理",B:"Bob",C:"Queena",D:"花生",P:"陳孝宗",reg:"思因",all:""};
+const V1_ROLE_NAMES=["負責人","協助人員","主持人","場控","設備","評審"];
+// 依官網暫定議程（2026-11-05 擷取）：[廳別, 日期, 開始, 結束, 名稱, 補充]
+const PRESET=[
+["reg","d1","08:00","17:00","報到",""],["all","d1","10:20","10:40","茶敘",""],["all","d1","12:00","13:00","午餐",""],["all","d1","14:20","14:40","茶敘",""],
+["main","d1","09:20","09:30","開幕典禮",""],
+["main","d1","09:30","10:20","主題演講 I","Prof. Philip S. Yu · 美國伊利諾大學芝加哥分校"],
+["main","d1","10:40","12:00","國科會智慧計算學門","中堅躍升研究計畫口頭報告"],
+["main","d1","13:00","14:20","特別場次 1",""],["main","d1","14:40","16:00","專題教學",""],
+["main","d1","16:00","16:50","主題演講 II","曹昱 研究員 · 中央研究院"],
+["main","d1","16:50","17:40","國際座談","主題演講講者參與"],
+["main","d1","18:00","20:00","歡迎晚宴","公布論文獎"],
+["A","d1","10:40","12:00","國際口頭場次 1","IO1"],["A","d1","13:00","14:20","國際口頭場次 2","IO2"],["A","d1","14:40","16:00","國際口頭場次 3","IO3"],
+["B","d1","10:40","12:00","國內口頭場次 1","DO1"],["B","d1","13:00","14:20","國內口頭場次 2","DO2"],["B","d1","14:40","16:00","國內口頭場次 3","DO3"],
+["C","d1","10:40","12:00","AI CUP 場次",""],["C","d1","13:00","14:20","跨域 AI 永續創新 場次 1",""],["C","d1","14:40","16:00","跨域 AI 永續創新 場次 2",""],
+["D","d1","10:40","12:00","產業軌道 1",""],["D","d1","12:00","13:00","TAAI 會員大會與理監事會",""],["D","d1","13:00","14:20","產業軌道 2",""],["D","d1","14:40","16:00","TAAI 碩博士論文獎口頭報告",""],
+["P","d1","10:40","12:00","海報場次 1","PS1 · 國際"],["P","d1","13:00","14:20","海報場次 2","PS2 · 國內"],["P","d1","14:40","16:00","海報場次 3","PS3 · 國際"],
+["reg","d2","08:00","17:00","報到",""],["all","d2","09:50","10:10","茶敘",""],["all","d2","12:00","13:00","午餐",""],["all","d2","14:20","14:40","茶敘",""],
+["main","d2","09:00","09:50","主題演講 III","Prof. Ljiljana Trajkovic · 加拿大西門菲莎大學"],
+["main","d2","10:10","11:00","特別場次 2",""],["main","d2","11:10","12:00","青年女性之星場次",""],["main","d2","13:00","14:20","國內座談",""],["main","d2","14:40","15:30","特別場次 3",""],
+["main","d2","15:40","16:30","主題演講 IV","Prof. Kazunori Komatani · 日本大阪大學"],
+["main","d2","16:30","17:00","閉幕典禮與頒獎","頒發論文發表獎"],
+["A","d2","10:10","11:00","國際口頭場次 4","IO4"],["A","d2","11:10","12:00","國際口頭場次 5","IO5"],["A","d2","13:00","14:20","國際口頭場次 6","IO6"],["A","d2","14:40","15:30","國際口頭場次 7","IO7"],
+["B","d2","10:10","11:00","國內口頭場次 4","DO4"],["B","d2","11:10","12:00","國內口頭場次 5","DO5"],["B","d2","13:00","14:20","國內口頭場次 6","DO6"],["B","d2","14:40","15:30","國內口頭場次 7","DO7"],
+["C","d2","10:10","11:00","跨域 AI 場次 1",""],["C","d2","11:10","12:00","跨域 AI 場次 2",""],["C","d2","13:00","14:20","高中生口頭場次 1",""],["C","d2","14:40","15:30","高中生口頭場次 2",""],
+["D","d2","10:10","11:00","Agentic AI 場次 1",""],["D","d2","11:10","12:00","Agentic AI 場次 2",""],["D","d2","13:00","14:20","NAPAI Agentic AI 競賽 場次 1",""],["D","d2","14:40","16:30","NAPAI Agentic AI 競賽 場次 2",""],
+["P","d2","10:10","11:00","海報場次 4","PS4 · 國內 + 智慧計算學門成果展 1"],["P","d2","11:10","12:00","海報場次 5","PS5 · 國際 + 智慧計算學門成果展 2"],["P","d2","13:00","14:20","海報場次 6","PS6 · 國內"],["P","d2","14:40","15:30","海報場次 7","PS7 · 國內"]
+];
+
+// 依官網接駁車時刻表（2026-11-05 擷取）
+const TPE="捷運臺北大學站（三鶯線）",BQ="板橋高鐵站",DBG="大板根度假村";
+const BUS=[
+["d1","08:30","08:55","隨車（台北大學－大板根）去程","接駁車 1 · "+TPE+" → "+DBG],
+["d1","08:40","09:30","隨車（板橋－大板根）去程","接駁車 2 · "+BQ+" → "+DBG],
+["d1","20:20","20:45","隨車（大板根－台北大學）回程","接駁車 3 · "+DBG+" → "+TPE],
+["d1","20:20","21:10","隨車（大板根－板橋）回程","接駁車 4 · "+DBG+" → "+BQ],
+["d2","08:30","08:55","隨車（台北大學－大板根）去程","接駁車 1 · "+TPE+" → "+DBG],
+["d2","08:40","09:30","隨車（板橋－大板根）去程","接駁車 2 · "+BQ+" → "+DBG],
+["d2","17:20","17:45","隨車（大板根－台北大學）回程","接駁車 5 · "+DBG+" → "+TPE],
+["d2","17:20","18:10","隨車（大板根－板橋）回程","接駁車 6 · "+DBG+" → "+BQ]
+];
+const busSessions=()=>BUS.map((b,i)=>({id:"bus"+i,room:"bus",day:b[0],start:b[1],end:b[2],title:b[3],sub:b[4],assign:{},status:"未通知",note:""}));
+function freshState(){
+  let n=0;const roles={};
+  for(const k in DEFAULT_ROLES) roles[k]=DEFAULT_ROLES[k].map(name=>({id:"r"+(++n),name}));
+  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
+}
+function valid(s){return s&&typeof s==="object"&&Array.isArray(s.sessions)&&s.roles&&typeof s.roles==="object"}
+// 舊版資料：已填的人員全部保留，只移除沒填過的預設職務欄
+function migrate(s){
+  if(Number(s.v)>=2)return s;
+  s.nextId=Number(s.nextId)||5000;
+  s.sessions.forEach(x=>{if(x.room==="all"&&x.title==="報到")x.room="reg"});
+  const old=s.roles,roles={};
+  for(const r of ROOMS){
+    const cand=old[r.k]||(r.k==="reg"?old.all:null)||[],rows=s.sessions.filter(x=>x.room===r.k);
+    roles[r.k]=cand.filter(c=>!V1_ROLE_NAMES.includes(c.name)||rows.some(x=>x.assign&&String(x.assign[c.id]||"").trim()));
+  }
+  roles.bus=[{id:"r"+(s.nextId++),name:"隨車人員"}];
+  s.roles=roles;
+  if(!s.sessions.some(x=>x.room==="bus"))s.sessions.push(...busSessions());
+  s.leads={...DEFAULT_LEADS,...(s.leads||{})};
+  s.leadStatus=s.leadStatus||{};
+  s.v=2;
+  return s;
+}
+function normalize(s){
+  migrate(s);
+  s.people=s.people&&typeof s.people==="object"?s.people:{};
+  s.leads=s.leads&&typeof s.leads==="object"?s.leads:{};
+  s.leadStatus=s.leadStatus&&typeof s.leadStatus==="object"?s.leadStatus:{};
+  s.nextId=Number(s.nextId)||5000;
+  ROOMS.forEach(r=>{if(!Array.isArray(s.roles[r.k]))s.roles[r.k]=[]});
+  s.sessions.forEach(x=>{x.assign=x.assign&&typeof x.assign==="object"?x.assign:{};if(!STATUS.includes(x.status))x.status=STATUS[0];x.note=x.note||"";x.sub=x.sub||""});
+  return s;
+}
+const API="https://api.github.com";
+function detectRepo(){
+  const m=location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i);
+  if(!m)return null;
+  const seg=location.pathname.split("/").filter(Boolean)[0];
+  return {owner:m[1],repo:seg&&!seg.includes(".")?seg:m[1]+".github.io"};
+}
+const REPO=detectRepo();
+const mode={hosted:!!REPO,canEdit:!REPO,token:null,remoteText:null,publishing:false};
+let storageOK=true,state;
+try{const raw=REPO?null:localStorage.getItem(KEY);const p=raw?JSON.parse(raw):null;state=valid(p)?normalize(p):freshState()}
+catch(e){storageOK=false;state=freshState()}
+const ui={view:"overview",room:"main",onlyOpen:false,flash:null,message:null,msgErr:false};
+try{const u=JSON.parse(localStorage.getItem(KEY+"-ui")||"null");if(u){ui.view=u.view||ui.view;ui.room=u.room||ui.room}}catch(e){}
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const roomOf=k=>ROOMS.find(r=>r.k===k)||ROOMS[0];
+const dayOf=k=>DAYS.find(d=>d.k===k)||DAYS[2];
+const NA=/^[—\-－–]+$/;
+const names=v=>String(v||"").split(/[,，、;；\/／\n]+/).map(x=>x.trim()).filter(x=>x&&!NA.test(x));
+const isNA=v=>NA.test(String(v||"").trim());
+const byTime=(a,b)=>(a.start+a.end).localeCompare(b.start+b.end);
+
+let saveTimer;
+function publishable(s){
+  const people={};
+  for(const n in s.people){const g=s.people[n]&&s.people[n].group;people[n]=g?{group:g}:{}}
+  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,sessions:s.sessions,people},null,1);
+}
+function fmtTime(iso){const d=new Date(iso);if(isNaN(d))return "";const p=x=>String(x).padStart(2,"0");return p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())}
+function setHostedStatus(){
+  if(!mode.hosted)return;
+  const when=state.updatedAt?"最後更新 "+fmtTime(state.updatedAt):"";
+  if(!mode.canEdit){$("saved").textContent=when;return}
+  const dirty=publishable(state)!==mode.remoteText;
+  $("saved").textContent=dirty?"有未發布的變更":"已是最新 · "+when;
+  $("btnPublish").disabled=mode.publishing||!dirty;
+}
+function saveNow(){
+  if(!mode.canEdit){try{localStorage.setItem(KEY+"-ui",JSON.stringify({view:ui.view,room:ui.room}))}catch(e){}return}
+  try{
+    localStorage.setItem(KEY,JSON.stringify(state));
+    localStorage.setItem(KEY+"-ui",JSON.stringify({view:ui.view,room:ui.room}));
+    storageOK=true;
+    const t=new Date();$("saved").textContent="已自動儲存 "+String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0");
+    setHostedStatus();
+  }catch(e){storageOK=false;$("saved").textContent="無法自動儲存，請按「備份」";}
+}
+function save(){clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,250)}
+window.addEventListener("beforeunload",()=>{clearTimeout(saveTimer);saveNow()});
+
+function progress(s){
+  let need=0,done=0;
+  for(const r of state.roles[s.room]||[]){const v=s.assign[r.id];if(isNA(v))continue;need++;if(names(v).length)done++}
+  return {need,done,cls:need&&done>=need?"full":done?"part":""};
+}
+function sumProgress(list){return list.reduce((a,s)=>{const p=progress(s);a.need+=p.need;a.done+=p.done;return a},{need:0,done:0})}
+function areaProgress(k){
+  const p=sumProgress(state.sessions.filter(s=>s.room===k)),r=roomOf(k),v=state.leads[k];
+  if(r.lead&&!isNA(v)){p.need++;if(names(v).length)p.done++}
+  return p;
+}
+function leadTasks(k){
+  const r=roomOf(k),out=[];
+  for(const d of ["d1","d2"]){
+    const rows=state.sessions.filter(s=>s.room===k&&s.day===d);
+    if(!rows.length)continue;
+    out.push({id:"lead-"+k+"-"+d,room:k,day:d,start:rows.map(s=>s.start).sort()[0],end:rows.map(s=>s.end).sort().pop(),title:"全部場次",sub:"",isLead:true});
+  }
+  return out;
+}
+function allTasks(){
+  const map=new Map();
+  for(const s of state.sessions)for(const r of state.roles[s.room]||[])for(const n of names(s.assign[r.id])){
+    if(!map.has(n))map.set(n,[]);map.get(n).push({s,role:r.name,roleId:r.id});
+  }
+  for(const r of ROOMS)if(r.lead)for(const n of names(state.leads[r.k]))for(const s of leadTasks(r.k)){
+    if(!map.has(n))map.set(n,[]);map.get(n).push({s,role:"負責人",roleId:"lead"});
+  }
+  for(const n of Object.keys(state.people))if(!map.has(n))map.set(n,[]);
+  map.forEach(list=>list.sort((a,b)=>dayOf(a.s.day).k.localeCompare(dayOf(b.s.day).k)||byTime(a.s,b.s)));
+  return map;
+}
+function overlaps(a,b){
+  if(a.id===b.id||a.day!==b.day||a.day==="x")return false;
+  if((a.isLead||b.isLead)&&a.room===b.room)return false;
+  return a.start<b.end&&b.start<a.end;
+}
+function conflictInfo(map){
+  const bad=new Map();
+  map.forEach((list,n)=>{list.forEach(t=>{const hit=list.filter(o=>overlaps(t.s,o.s));if(hit.length){if(!bad.has(n))bad.set(n,new Map());bad.get(n).set(t.s.id,hit)}})});
+  return bad;
+}
+
+function renderTabs(){
+  const tp=ROOMS.reduce((a,r)=>{const p=areaProgress(r.k);a.need+=p.need;a.done+=p.done;return a},{need:0,done:0});
+  $("total").textContent="已派 "+tp.done+" / "+tp.need;
+  const bad=conflictInfo(allTasks()).size;
+  $("tabs").innerHTML='<button type="button" data-tab="overview" class="'+(ui.view==="people"?"":"on")+'">各區負責人</button>'
+    +'<button type="button" data-tab="people" class="'+(ui.view==="people"?"on":"")+'">人員'+(bad?'<span class="pill bad" style="margin-left:6px">'+bad+" 人撞時段</span>":"")+"</button>";
+}
+function banners(){
+  let h="";
+  if(ui.message)h+='<div class="banner'+(ui.msgErr?" err":"")+'" role="status">'+esc(ui.message)+"</div>";
+  if(!storageOK)h+='<div class="banner err">這個瀏覽器無法自動儲存，關閉前請按「備份」保存資料。</div>';
+  return h;
+}
+function statusPill(k){const v=state.leadStatus[k]||STATUS[0];return '<button type="button" class="statuspill s'+STATUS.indexOf(v)+'" data-cycle="'+esc(k)+'" title="點一下切換狀態">'+esc(v)+"</button>"}
+function renderRoom(){
+  const room=roomOf(ui.room),roles=state.roles[room.k]||[],list=state.sessions.filter(s=>s.room===room.k);
+  const p=areaProgress(room.k);
+  let h=banners()+'<button type="button" class="ghost back" data-back="1">‹ 回到各區負責人</button>'
+    +'<div class="head"><h2>'+esc(room.name)+'</h2><span class="muted">'+esc(room.place)+'</span><span class="spacer"></span>'
+    +'<button type="button" class="edit-only ghost" id="addTask">新增工作</button><button type="button" class="edit-only ghost" id="editRoles">加欄位</button></div>';
+  if(room.lead)h+='<div class="leadbox lead-row"><span class="lead-label">負責人</span><input aria-label="負責人" data-lead="'+esc(room.k)+'" list="peopleList" value="'+esc(state.leads[room.k]||"")+'" placeholder="輸入姓名">'+statusPill(room.k)+"</div>";
+  for(const d of DAYS){
+    let rows=list.filter(s=>s.day===d.k).sort(byTime);
+    const had=rows.length;
+    if(ui.onlyOpen&&roles.length)rows=rows.filter(s=>{const q=progress(s);return q.done<q.need});
+    if(!had)continue;
+    h+='<section><h3>'+esc(d.name)+'</h3><div class="scroll"><table>'+(roles.length?'<thead><tr><th>時間</th><th>工作</th>'
+      +roles.map(r=>"<th>"+esc(r.name)+"</th>").join("")+'<th>狀態</th><th>備註</th><th class="edit-only"></th></tr></thead>':"")+'<tbody>';
+    if(!rows.length)h+='<tr><td colspan="'+(roles.length+5)+'" class="muted">這一天都派滿了。</td></tr>';
+    for(const s of rows){
+      h+='<tr id="row-'+esc(s.id)+'" class="'+(ui.flash===s.id?"flash":"")+'"><td class="time">'+esc(s.start)+"–"+esc(s.end)+'</td><td class="task"><b>'+esc(s.title)+"</b>"+(s.sub?"<small>"+esc(s.sub)+"</small>":"")+"</td>";
+      for(const r of roles)h+='<td><input aria-label="'+esc(s.title+" "+r.name)+'" list="peopleList" data-s="'+esc(s.id)+'" data-r="'+esc(r.id)+'" value="'+esc(s.assign[r.id]||"")+'"></td>';
+      if(roles.length)h+='<td class="st"><select aria-label="狀態" data-status="'+esc(s.id)+'">'+STATUS.map(x=>"<option"+(x===s.status?" selected":"")+">"+x+"</option>").join("")+"</select></td>";
+      h+='<td class="note"><input aria-label="備註" placeholder="備註" data-note="'+esc(s.id)+'" value="'+esc(s.note)+'"></td>'
+        +'<td class="edit-only act"><button type="button" class="ghost" data-edit="'+esc(s.id)+'">編輯</button></td></tr>';
+    }
+    h+="</tbody></table></div></section>";
+  }
+  if(!list.length)h+='<p class="muted">這個區域還沒有工作，按「新增工作」加入第一項。</p>';
+  $("main").innerHTML=h;
+  refreshInputs();
+}
+function refreshInputs(){
+  const bad=conflictInfo(allTasks());
+  document.querySelectorAll("input[data-s]").forEach(el=>{
+    const ns=names(el.value),sid=el.dataset.s;
+    const clash=ns.filter(n=>bad.has(n)&&bad.get(n).has(sid));
+    el.classList.toggle("filled",ns.length>0&&!clash.length);
+    el.classList.toggle("na",isNA(el.value));
+    el.classList.toggle("conflict",clash.length>0);
+    if(clash.length){
+      el.title=clash.map(n=>n+" 同時段也在："+bad.get(n).get(sid).map(t=>roomOf(t.s.room).name+" "+t.s.title+"（"+t.s.start+"–"+t.s.end+"）").join("、")).join("\n");
+    }else el.removeAttribute("title");
+  });
+  document.querySelectorAll("input[data-lead]").forEach(el=>{
+    const k=el.dataset.lead,ns=names(el.value);
+    const clash=ns.filter(n=>bad.has(n)&&[...bad.get(n).keys()].some(id=>id.startsWith("lead-"+k+"-")));
+    el.classList.toggle("filled",ns.length>0&&!clash.length);
+    el.classList.toggle("na",isNA(el.value));
+    el.classList.toggle("conflict",clash.length>0);
+    if(clash.length)el.title=clash.map(n=>n+" 有其他同時段的工作，詳見「人員」頁").join("\n");else el.removeAttribute("title");
+  });
+  const known=[...allTasks().keys()].sort((a,b)=>a.localeCompare(b,"zh-Hant"));
+  $("peopleList").innerHTML=known.map(n=>'<option value="'+esc(n)+'">').join("");
+}
+function renderOverview(){
+  let h=banners()+'<section class="cards">';
+  for(const r of ROOMS){
+    const p=areaProgress(r.k);
+    h+='<article class="card"><button type="button" class="card-top" data-tab-go="'+esc(r.k)+'"><span><span class="card-name">'+esc(r.name)+'</span><span class="card-place">'+esc(r.place)+'</span></span><span class="chev" aria-hidden="true">›</span></button>';
+    if(r.lead)h+='<div class="lead-row"><input aria-label="'+esc(r.name+" 負責人")+'" data-lead="'+esc(r.k)+'" list="peopleList" value="'+esc(state.leads[r.k]||"")+'" placeholder="尚未指派">'+statusPill(r.k)+"</div>";
+    else h+='<div class="bus-count">隨車已派 '+p.done+" / "+p.need+" 班</div>";
+    h+="</article>";
+  }
+  $("main").innerHTML=h+"</section>";
+  refreshInputs();
+}
+function taskLine(t){const r=roomOf(t.s.room);return t.s.start+"–"+t.s.end+"  "+r.name+(r.noPlace?"":"（"+r.place+"）")+"  "+t.s.title+"｜"+t.role}
+function personText(n,list){
+  let out="【TAAI 2026 工作分配】"+n+"\n";
+  for(const d of DAYS){const ds=list.filter(t=>t.s.day===d.k);if(!ds.length)continue;out+="\n"+d.short+"\n"+ds.map(taskLine).join("\n")+"\n"}
+  return out.trim();
+}
+const SEP=/([,，、;；\/／\n]+)/;
+function mapNames(v,fn){
+  const parts=String(v||"").split(SEP).map(x=>SEP.test(x)?x:fn(x.trim()));
+  return parts.filter((x,i)=>x!==null).join("").replace(/^[,，、;；\/／\n\s]+|[,，、;；\/／\n\s]+$/g,"").replace(/([,，、;；\/／\n])[,，、;；\/／\n]+/g,"$1");
+}
+function eachField(fn){
+  for(const s of state.sessions)for(const r in s.assign)s.assign[r]=mapNames(s.assign[r],fn);
+  for(const k in state.leads)state.leads[k]=mapNames(state.leads[k],fn);
+}
+function renamePerson(oldName,newName){
+  if(state.people[newName]||allTasks().has(newName)){
+    if(!window.confirm("名單裡已經有「"+newName+"」，要把「"+oldName+"」併過去嗎？"))return false;
+  }
+  eachField(x=>x===oldName?newName:x);
+  const a=state.people[oldName]||{},b=state.people[newName]||{};
+  delete state.people[oldName];
+  state.people[newName]={...a,...b};
+  ui.openPerson=newName;
+  return true;
+}
+function removePerson(n){
+  const c=(allTasks().get(n)||[]).length;
+  if(!window.confirm("確定移除「"+n+"」？"+(c?"這個人目前的 "+c+" 項工作會變成未指派。":"")))return;
+  eachField(x=>x===n?null:x);
+  delete state.people[n];
+  save();render();
+}
+function renderPeople(){
+  const map=allTasks(),bad=conflictInfo(map);
+  const ns=[...map.keys()].sort((a,b)=>(bad.has(b)?1:0)-(bad.has(a)?1:0)||a.localeCompare(b,"zh-Hant"));
+  let h=banners()+'<div class="head"><h2>人員</h2><span class="muted">共 '+ns.length+' 人</span></div>'
+    +'<details class="bulk edit-only"><summary>一次貼上人員名單</summary><div class="stack"><textarea id="bulk" rows="3" aria-label="人員名單" placeholder="一行一位"></textarea><div><button type="button" id="bulkAdd">加入</button></div></div></details>';
+  if(!ns.length)h+='<p class="muted">還沒有人員。在上方貼名單，或到各廳別填入姓名後會自動出現在這裡。</p>';
+  h+='<section class="stack">';
+  ns.forEach((n,i)=>{
+    const list=map.get(n),info=state.people[n]||{},cf=bad.get(n);
+    h+='<details class="person"'+(cf||ui.openPerson===n?" open":"")+'><summary><b>'+esc(n)+"</b>"+(info.group?'<span class="muted">'+esc(info.group)+"</span>":"")+'<span class="pill">'+list.length+" 項工作</span>"+(cf&&mode.canEdit?'<span class="pill bad">時段重疊</span>':"")+"</summary>"
+      +'<div class="body"><div class="fields"><label class="edit-only">姓名<input data-rename="'+esc(n)+'" value="'+esc(n)+'"></label><label>組別<input data-pinfo="group" data-p="'+esc(n)+'" value="'+esc(info.group||"")+'"></label><label class="edit-only">聯絡方式'+(mode.hosted?"（不會發布）":"")+'<input data-pinfo="contact" data-p="'+esc(n)+'" value="'+esc(info.contact||"")+'"></label></div>';
+    if(list.length){
+      h+='<ul class="tasks">'+list.map(t=>{const c=cf&&cf.has(t.s.id);return '<li class="'+(c?"conflict":"")+'">'+esc(dayOf(t.s.day).short)+" "+esc(taskLine(t))+(c&&mode.canEdit?"（時段重疊）":"")+"</li>"}).join("")+"</ul>"
+        +'<div><button type="button" data-copy="'+i+'">複製工作單</button></div>';
+    }else h+='<p class="tip">尚未分配工作。</p>';
+    h+='<div class="edit-only"><button type="button" class="ghost" style="color:var(--bad)" data-delperson="'+esc(n)+'">移除這個人</button></div>';
+    h+='<textarea id="txt-'+i+'" hidden readonly>'+esc(personText(n,list))+"</textarea></div></details>";
+  });
+  h+="</section>";
+  $("main").innerHTML=h;
+  refreshInputs();
+}
+function applyMode(){
+  document.body.classList.toggle("ro",!mode.canEdit);
+  $("btnPublish").hidden=!(mode.hosted&&mode.canEdit);
+  $("btnLogin").hidden=!mode.hosted;
+  $("btnLogin").textContent=mode.canEdit?"登出":"編輯登入";
+  if(!mode.canEdit)$("main").querySelectorAll("input,select,.statuspill").forEach(el=>{el.disabled=true});
+  setHostedStatus();
+}
+function render(){
+  renderTabs();
+  if(ui.view==="overview")renderOverview();else if(ui.view==="people")renderPeople();else renderRoom();
+  applyMode();
+  ui.message=null;
+  if(ui.flash){const el=$("row-"+ui.flash);if(el)el.scrollIntoView({block:"center"});ui.flash=null}
+}
+
+// 填寫事件
+$("main").addEventListener("input",e=>{
+  const el=e.target,find=id=>state.sessions.find(s=>s.id===id);
+  if(el.dataset.lead){state.leads[el.dataset.lead]=el.value;save()}
+  else if(el.dataset.s){const s=find(el.dataset.s);if(s){s.assign[el.dataset.r]=el.value;save()}}
+  else if(el.dataset.note){const s=find(el.dataset.note);if(s){s.note=el.value;save()}}
+  else if(el.dataset.pinfo){const n=el.dataset.p;state.people[n]=state.people[n]||{};state.people[n][el.dataset.pinfo]=el.value;save()}
+});
+$("main").addEventListener("change",e=>{
+  const el=e.target;
+  if(el.dataset.status){const s=state.sessions.find(x=>x.id===el.dataset.status);if(s){s.status=el.value;save()}return}
+  if(el.dataset.rename!==undefined){
+    const o=el.dataset.rename,v=el.value.trim();
+    if(!v||v===o){el.value=o;return}
+    if(renamePerson(o,v)){save();render()}else el.value=o;
+    return;
+  }
+  if(el.dataset.leadstatus){state.leadStatus[el.dataset.leadstatus]=el.value;save();return}
+  if(el.dataset.s||el.dataset.lead){refreshInputs();renderTabs();updateRoomPill()}
+});
+function updateRoomPill(){
+  const pill=document.querySelector(".head .pill");if(!pill)return;
+  if(ui.view!=="room")return;
+  const p=areaProgress(ui.room);
+  pill.textContent="已派 "+p.done+" / "+p.need;
+  pill.className="pill "+(p.need&&p.done>=p.need?"full":p.done?"part":"");
+}
+$("main").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.cycle){
+    const k=b.dataset.cycle,i=STATUS.indexOf(state.leadStatus[k]||STATUS[0]),v=STATUS[(i+1)%STATUS.length];
+    state.leadStatus[k]=v;b.textContent=v;b.className="statuspill s"+STATUS.indexOf(v);save();return;
+  }
+  if(b.dataset.delperson){removePerson(b.dataset.delperson);return}
+  if(b.dataset.back){ui.view="overview";save();render();window.scrollTo(0,0);return}
+  if(b.dataset.tabGo){ui.view="room";ui.room=b.dataset.tabGo;save();render();window.scrollTo(0,0)}
+  else if(b.id==="addTask")openTask(null);
+  else if(b.id==="editRoles")openRoles();
+  else if(b.dataset.edit)openTask(b.dataset.edit);
+  else if(b.dataset.jump){const s=state.sessions.find(x=>x.id===b.dataset.jump);if(s){ui.view="room";ui.room=s.room;ui.onlyOpen=false;ui.flash=s.id;save();render()}}
+  else if(b.id==="bulkAdd"){
+    const lines=$("bulk").value.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+    lines.forEach(n=>{state.people[n]=state.people[n]||{}});
+    ui.message=lines.length?"已加入 "+lines.length+" 人。":"請先貼上名單。";ui.msgErr=false;save();render();
+  }
+  else if(b.dataset.copy!==undefined){
+    const ta=$("txt-"+b.dataset.copy),text=ta.value,done=()=>{const o=b.textContent;b.textContent="已複製";setTimeout(()=>{b.textContent=o},1500)};
+    const fallback=()=>{ta.hidden=false;ta.rows=8;ta.select();b.textContent="請按 ⌘C 複製"};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done,fallback);else fallback();
+  }
+});
+$("tabs").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-tab]");if(!b)return;
+  const t=b.dataset.tab;
+  if(t.startsWith("room:")){ui.view="room";ui.room=t.slice(5)}else ui.view=t;
+  save();render();window.scrollTo(0,0);
+});
+
+// 工作編輯視窗
+let editing=null;
+$("fRoom").innerHTML=ROOMS.map(r=>'<option value="'+r.k+'">'+esc(r.name)+"</option>").join("");
+$("fDay").innerHTML=DAYS.map(d=>'<option value="'+d.k+'">'+esc(d.short)+"</option>").join("");
+function openTask(id){
+  editing=id;
+  const s=id?state.sessions.find(x=>x.id===id):{title:"",sub:"",room:ui.room,day:"d1",start:"08:00",end:"09:00"};
+  $("dlgTaskTitle").textContent=id?"編輯工作":"新增工作";
+  $("fTitle").value=s.title;$("fSub").value=s.sub||"";$("fRoom").value=s.room;$("fDay").value=s.day;$("fStart").value=s.start;$("fEnd").value=s.end;
+  $("fErr").hidden=true;$("fDelete").hidden=!id;
+  $("dlgTask").showModal();
+}
+$("fCancel").addEventListener("click",()=>$("dlgTask").close());
+$("fDelete").addEventListener("click",()=>{
+  const s=state.sessions.find(x=>x.id===editing);if(!s)return;
+  if(!window.confirm("確定刪除「"+s.title+"」？這一列已填的人員與備註也會一起刪除。"))return;
+  state.sessions=state.sessions.filter(x=>x.id!==editing);$("dlgTask").close();save();render();
+});
+$("formTask").addEventListener("submit",e=>{
+  const v={title:$("fTitle").value.trim(),sub:$("fSub").value.trim(),room:$("fRoom").value,day:$("fDay").value,start:$("fStart").value,end:$("fEnd").value};
+  if(!v.title||v.end<=v.start){e.preventDefault();$("fErr").hidden=false;$("fErr").textContent=v.title?"結束時間要晚於開始時間。":"請填寫名稱。";return}
+  if(editing){
+    const s=state.sessions.find(x=>x.id===editing);
+    if(s.room!==v.room)s.assign={};
+    Object.assign(s,v);
+  }else state.sessions.push(Object.assign({id:"c"+(state.nextId++),assign:{},status:STATUS[0],note:""},v));
+  ui.room=v.room;ui.view="room";save();render();
+});
+
+// 職務設定視窗
+let roleDraft=[];
+function drawRoles(){
+  $("roleRows").innerHTML=roleDraft.map((r,i)=>'<div class="role-row"><input aria-label="職務名稱" data-ri="'+i+'" value="'+esc(r.name)+'" maxlength="30"><button type="button" data-rdel="'+i+'">刪除</button></div>').join("");
+}
+function openRoles(){
+  roleDraft=(state.roles[ui.room]||[]).map(r=>({id:r.id,name:r.name}));
+  $("dlgRolesTitle").textContent=roomOf(ui.room).name+"：職務設定";
+  drawRoles();$("dlgRoles").showModal();
+}
+$("roleRows").addEventListener("input",e=>{if(e.target.dataset.ri!==undefined)roleDraft[+e.target.dataset.ri].name=e.target.value});
+$("roleRows").addEventListener("click",e=>{const b=e.target.closest("button[data-rdel]");if(b){roleDraft.splice(+b.dataset.rdel,1);drawRoles()}});
+$("roleAdd").addEventListener("click",()=>{roleDraft.push({id:"r"+(state.nextId++),name:""});drawRoles();const all=$("roleRows").querySelectorAll("input");all[all.length-1].focus()});
+$("rolesCancel").addEventListener("click",()=>$("dlgRoles").close());
+$("formRoles").addEventListener("submit",()=>{
+  const next=roleDraft.map(r=>({id:r.id,name:r.name.trim()})).filter(r=>r.name),keep=new Set(next.map(r=>r.id));
+  const removed=(state.roles[ui.room]||[]).filter(r=>!keep.has(r.id));
+  state.sessions.filter(s=>s.room===ui.room).forEach(s=>removed.forEach(r=>{delete s.assign[r.id]}));
+  state.roles[ui.room]=next;save();render();
+});
+
+// 匯出
+function stamp(){const d=new Date(),p=x=>String(x).padStart(2,"0");return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())}
+function download(name,blob){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+function sortedSessions(list){return [...list].sort((a,b)=>DAYS.findIndex(d=>d.k===a.day)-DAYS.findIndex(d=>d.k===b.day)||byTime(a,b)||ROOMS.findIndex(r=>r.k===a.room)-ROOMS.findIndex(r=>r.k===b.room))}
+function flatRows(){
+  const head=["日期","開始","結束","廳別","場地","場次／工作","說明","職務","人員","狀態","備註"],rows=[head];
+  for(const r of ROOMS)if(r.lead)rows.push(["全程","","",r.name,r.noPlace?"":r.place,"全部場次","","負責人",(state.leads[r.k]||"").trim(),state.leadStatus[r.k]||STATUS[0],""]);
+  for(const s of sortedSessions(state.sessions)){
+    const r=roomOf(s.room);
+    for(const role of state.roles[s.room]||[]){
+      const v=s.assign[role.id]||"";
+      if(isNA(v))continue;
+      rows.push([dayOf(s.day).short,s.start,s.end,r.name,r.noPlace?"":r.place,s.title,s.sub,role.name,v.trim(),s.status,s.note]);
+    }
+  }
+  return rows;
+}
+function peopleRows(){
+  const rows=[["姓名","組別","聯絡方式","日期","開始","結束","廳別","場次／工作","職務","時段重疊"]],map=allTasks(),bad=conflictInfo(map);
+  [...map.keys()].sort((a,b)=>a.localeCompare(b,"zh-Hant")).forEach(n=>{
+    const i=state.people[n]||{},list=map.get(n);
+    if(!list.length)rows.push([n,i.group||"",i.contact||"","","","","","","",""]);
+    list.forEach(t=>rows.push([n,i.group||"",i.contact||"",dayOf(t.s.day).short,t.s.start,t.s.end,roomOf(t.s.room).name,t.s.title,t.role,bad.get(n)&&bad.get(n).has(t.s.id)?"是":""]));
+  });
+  return rows;
+}
+function roomRows(r){
+  const roles=state.roles[r.k]||[],st=roles.length?["狀態"]:[],rows=[["日期","開始","結束","場次／工作","說明",...roles.map(x=>x.name),...st,"備註"]];
+  sortedSessions(state.sessions.filter(s=>s.room===r.k)).forEach(s=>rows.push([dayOf(s.day).short,s.start,s.end,s.title,s.sub,...roles.map(x=>s.assign[x.id]||""),...(roles.length?[s.status]:[]),s.note]));
+  return rows;
+}
+const csvCell=v=>{let s=String(v==null?"":v);if(/^[=+\-@]/.test(s))s="'"+s;return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+function csvText(rows){return "﻿"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n")}
+
+// 不依賴外部函式庫的 xlsx 產生器（ZIP 不壓縮）
+const crcTable=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=crcTable[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function zipStore(files){
+  const enc=new TextEncoder(),parts=[],central=[];let off=0;
+  for(const f of files){
+    const name=enc.encode(f.name),data=enc.encode(f.text),crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,0,true);h.setUint16(12,0x21,true);
+    h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,name.length,true);h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),name,data);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,0,true);c.setUint16(14,0x21,true);
+    c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,name.length,true);c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer),name);
+    off+=30+name.length+data.length;
+  }
+  const cdSize=central.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cdSize,true);e.setUint32(16,off,true);
+  const all=[...parts,...central,new Uint8Array(e.buffer)],out=new Uint8Array(all.reduce((a,b)=>a+b.length,0));
+  let p=0;for(const a of all){out.set(a,p);p+=a.length}
+  return out;
+}
+const xml=s=>String(s==null?"":s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const colName=i=>{let s="";i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=(i-m-1)/26}return s};
+const widthOf=s=>[...String(s||"")].reduce((a,c)=>a+(c.charCodeAt(0)>255?2:1),0);
+function sheetXml(rows){
+  const cols=Math.max(...rows.map(r=>r.length)),w=[];
+  for(let c=0;c<cols;c++)w[c]=Math.min(46,Math.max(8,...rows.map(r=>widthOf(r[c])+2)));
+  let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="16"/><cols>'
+    +w.map((v,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+v+'" customWidth="1"/>').join("")+"</cols><sheetData>";
+  rows.forEach((r,ri)=>{
+    x+='<row r="'+(ri+1)+'">'+r.map((v,ci)=>'<c r="'+colName(ci)+(ri+1)+'" s="'+(ri?1:2)+'" t="inlineStr"><is><t xml:space="preserve">'+xml(v)+"</t></is></c>").join("")+"</row>";
+  });
+  return x+"</sheetData></worksheet>";
+}
+function buildXlsx(){
+  const leadRows=[["區域","地點","負責人","狀態"],...ROOMS.filter(r=>r.lead).map(r=>[r.name,r.place,(state.leads[r.k]||"").trim(),state.leadStatus[r.k]||STATUS[0]])];
+  const sheets=[{name:"負責人總覽",rows:leadRows},{name:"總表",rows:flatRows()},...ROOMS.map(r=>({name:r.name,rows:roomRows(r)})),{name:"人員工作單",rows:peopleRows()}];
+  const files=[
+    {name:"[Content_Types].xml",text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((s,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("")+"</Types>"},
+    {name:"_rels/.rels",text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+    {name:"xl/workbook.xml",text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheets.map((s,i)=>'<sheet name="'+xml(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join("")+"</sheets></workbook>"},
+    {name:"xl/_rels/workbook.xml.rels",text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((s,i)=>'<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join("")+'<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+    {name:"xl/styles.xml",text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF17607A"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="49" fontId="1" fillId="2" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/></cellXfs></styleSheet>'}
+  ];
+  sheets.forEach((s,i)=>files.push({name:"xl/worksheets/sheet"+(i+1)+".xml",text:sheetXml(s.rows)}));
+  return zipStore(files);
+}
+$("btnXlsx").addEventListener("click",()=>download("TAAI2026派工表-"+stamp()+".xlsx",new Blob([buildXlsx()],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})));
+$("btnCsv").addEventListener("click",()=>download("TAAI2026派工表-"+stamp()+".csv",new Blob([csvText(flatRows())],{type:"text/csv;charset=utf-8"})));
+$("btnJson").addEventListener("click",()=>download("TAAI2026派工備份-"+stamp()+".json",new Blob([JSON.stringify(state,null,2)],{type:"application/json"})));
+$("btnImport").addEventListener("click",()=>$("fileImport").click());
+$("fileImport").addEventListener("change",e=>{
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const p=JSON.parse(rd.result);
+      if(!valid(p))throw new Error("format");
+      if(!window.confirm("還原會用備份檔「"+f.name+"」覆蓋目前所有內容，確定嗎？"))return;
+      state=normalize(p);saveNow();ui.message="已從「"+f.name+"」還原。";ui.msgErr=false;
+    }catch(err){ui.message="這個檔案不是派工表備份，內容沒有變更。請選擇按「備份」存下的 .json 檔。";ui.msgErr=true}
+    render();
+  };
+  rd.readAsText(f);e.target.value="";
+});
+// GitHub Pages：所有人讀 data.json，登入後才能發布
+const TOKEN_KEY=KEY+"-token";
+const ghHeaders=()=>({Authorization:"Bearer "+mode.token,Accept:"application/vnd.github+json"});
+const contentsUrl=()=>API+"/repos/"+REPO.owner+"/"+REPO.repo+"/contents/data.json";
+async function fetchRemote(){
+  const r=await fetch("data.json?t="+Date.now(),{cache:"no-store"});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  const p=JSON.parse(await r.text());
+  if(!valid(p))throw new Error("format");
+  return p;
+}
+function adoptRemote(remote){
+  const at=remote.updatedAt;
+  const s=normalize(remote);s.updatedAt=at;
+  mode.remoteText=publishable(s);
+  return s;
+}
+function mergeLocal(remoteState){
+  let local=null;
+  try{const raw=localStorage.getItem(KEY);local=raw?JSON.parse(raw):null}catch(e){}
+  if(!valid(local))return remoteState;
+  local=normalize(local);
+  if(local.updatedAt===remoteState.updatedAt)return local;
+  if(publishable(local)!==mode.remoteText){
+    try{localStorage.setItem(KEY+"-replaced",JSON.stringify(local))}catch(e){}
+  }
+  for(const n in local.people){const c=local.people[n]&&local.people[n].contact;if(c){remoteState.people[n]=remoteState.people[n]||{};remoteState.people[n].contact=c}}
+  return remoteState;
+}
+async function checkToken(){
+  const r=await fetch(API+"/repos/"+REPO.owner+"/"+REPO.repo,{headers:ghHeaders()});
+  if(!r.ok)return false;
+  const j=await r.json();
+  return !!(j.permissions&&j.permissions.push);
+}
+async function loadHosted(){
+  try{
+    const remote=adoptRemote(await fetchRemote());
+    state=mode.canEdit?mergeLocal(remote):remote;
+  }catch(e){
+    ui.message="讀不到最新資料，目前顯示的是預設內容。請稍後重新整理。";ui.msgErr=true;
+    if(mode.canEdit){try{const l=JSON.parse(localStorage.getItem(KEY)||"null");if(valid(l))state=normalize(l)}catch(err){}}
+  }
+  render();
+}
+async function boot(){
+  if(!REPO)return;
+  try{mode.token=localStorage.getItem(TOKEN_KEY)}catch(e){}
+  if(mode.token){
+    let ok=false;try{ok=await checkToken()}catch(e){}
+    if(ok)mode.canEdit=true;
+    else{mode.token=null;try{localStorage.removeItem(TOKEN_KEY)}catch(e){}ui.message="編輯登入已失效，請重新登入。";ui.msgErr=true}
+  }
+  await loadHosted();
+  setInterval(async()=>{
+    if(mode.canEdit||document.hidden)return;
+    try{const p=await fetchRemote();if(p.updatedAt!==state.updatedAt){state=adoptRemote(p);render()}}catch(e){}
+  },60000);
+}
+function toB64(text){
+  const b=new TextEncoder().encode(text);let s="";
+  for(let i=0;i<b.length;i+=8192)s+=String.fromCharCode(...b.subarray(i,i+8192));
+  return btoa(s);
+}
+$("btnPublish").addEventListener("click",async()=>{
+  mode.publishing=true;$("btnPublish").textContent="發布中…";setHostedStatus();
+  try{
+    const head=await fetch(contentsUrl()+"?t="+Date.now(),{headers:ghHeaders()});
+    if(head.status!==200&&head.status!==404)throw new Error("status "+head.status);
+    const sha=head.status===200?(await head.json()).sha:undefined;
+    const body=publishable(state),at=new Date().toISOString(),obj=JSON.parse(body);obj.updatedAt=at;
+    const put=await fetch(contentsUrl(),{method:"PUT",headers:{...ghHeaders(),"Content-Type":"application/json"},body:JSON.stringify({message:"更新派工表",content:toB64(JSON.stringify(obj,null,1)),...(sha?{sha}:{})})});
+    if(!put.ok)throw new Error("status "+put.status);
+    state.updatedAt=at;mode.remoteText=body;saveNow();
+    ui.message="已發布。大家重新整理後約 1 分鐘內會看到。";ui.msgErr=false;
+  }catch(e){
+    const m=String(e.message||"");
+    ui.message=/401|403/.test(m)?"發布失敗：GitHub 拒絕這個 token，請重新登入。":/409|422/.test(m)?"發布失敗：GitHub 上的資料剛更新過，請再按一次發布。":"發布失敗，內容還保留在這個瀏覽器。請確認網路後再試。";ui.msgErr=true;
+  }
+  mode.publishing=false;$("btnPublish").textContent="發布更新";render();
+});
+document.addEventListener("click",e=>{const m=$("menu");if(m.open&&(!m.contains(e.target)||e.target.closest(".menu-list")))m.open=false});
+$("btnLogin").addEventListener("click",async()=>{
+  if(mode.canEdit){
+    if(publishable(state)!==mode.remoteText&&!window.confirm("還有未發布的變更，登出後別人看不到。確定登出嗎？"))return;
+    saveNow();mode.canEdit=false;mode.token=null;try{localStorage.removeItem(TOKEN_KEY)}catch(e){}
+    await loadHosted();return;
+  }
+  $("fToken").value="";$("loginErr").hidden=true;$("dlgLogin").showModal();
+});
+$("loginCancel").addEventListener("click",()=>$("dlgLogin").close());
+$("formLogin").addEventListener("submit",async e=>{
+  e.preventDefault();
+  mode.token=$("fToken").value.trim();
+  let ok=false;try{ok=await checkToken()}catch(err){}
+  if(!ok){mode.token=null;$("loginErr").hidden=false;$("loginErr").textContent="登入失敗：這個 token 沒有這個 repo 的寫入權限。";return}
+  try{localStorage.setItem(TOKEN_KEY,mode.token)}catch(err){}
+  mode.canEdit=true;$("fToken").value="";$("dlgLogin").close();
+  await loadHosted();
+});
+window.TAAI={buildXlsx,flatRows,peopleRows,csvText,getState:()=>state,mode,publishable};
+render();
+boot();
+</script>
+</body>
+</html>
