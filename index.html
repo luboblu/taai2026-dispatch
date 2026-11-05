@@ -180,7 +180,7 @@ tr.sub td{background:none}
 .add-people input{flex:1 1 170px}
 .add-people textarea,.add-people input{min-width:0;height:32px;min-height:32px;padding:5px 9px;font-size:13.5px;resize:vertical;background:var(--bg);border:1px solid var(--line2);border-radius:6px;color:var(--fg)}
 .people{border:1px solid var(--line);border-radius:7px;overflow:hidden}
-.people-head,.person summary{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 84px 72px 14px;gap:12px;align-items:center;padding:6px 12px}
+.people-head,.person summary{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 56px 56px 56px 78px 14px;gap:12px;align-items:center;padding:6px 12px}
 .people-head{font-size:12.5px;font-weight:500;color:var(--muted);border-bottom:1px solid var(--line)}
 .person{border-bottom:1px solid var(--line)}
 .person:last-child{border-bottom:0}
@@ -297,6 +297,10 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   tr.sub .c-people{padding-left:12px}
   .people-head{display:none}
   .person summary{grid-template-columns:minmax(0,1fr) auto 14px;gap:2px 10px}
+  .person-hours,.person-todo{display:none}
+  .person-flag{grid-column:2;grid-row:2}
+  .c-due{grid-column:1/-1;margin-top:2px}
+  .todo-add{flex-wrap:wrap}
   .person-group{grid-column:1;grid-row:2}
   .person .tag-bad{grid-column:2;grid-row:2}
   .person-num{grid-column:2;grid-row:1}
@@ -309,6 +313,28 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .chips{margin:0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* 人員排序 */
+.toolbar+.people{border-top:0;border-top-left-radius:0;border-top-right-radius:0}
+.people-head button{background:none;border:0;padding:0;min-height:0;font:inherit;color:inherit;justify-content:flex-start}
+.people-head button:hover{background:none;color:var(--fg)}
+.people-head button.on{color:var(--fg);font-weight:600}
+.people-head button.num{justify-content:flex-end}
+.person-num{text-align:right}
+.person-flag{text-align:right}
+
+/* 待辦 */
+.todo-add{display:flex;gap:6px;align-items:flex-start}
+.todo-add textarea{flex:1;min-width:0;min-height:32px;padding:5px 9px;font-size:13.5px;resize:vertical;field-sizing:content;max-height:180px}
+.todo-add+.tip{margin-top:-12px}
+.tbl input.todo-done:disabled{cursor:default}
+.todo-row.done .todo-title{color:var(--muted);text-decoration:line-through}
+.c-due{white-space:nowrap;width:1%;font-size:13px}
+.todo-date{border:1px solid transparent;border-radius:5px;background:none;padding:2px 4px;margin-left:-5px;font-size:13px;color:var(--fg);min-height:26px}
+.todo-date:hover{border-color:var(--line2)}
+.due{display:block;font-size:12px;color:var(--muted)}
+.due.warn{color:var(--warn);font-weight:600}
+.due.bad{color:var(--bad);font-weight:600}
 
 /* 現場總表 */
 .print-only{display:none}
@@ -386,7 +412,11 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .board-pre .b-item{font-size:8pt}
   .tbl-wrap{overflow:visible}
   .tbl tr{break-inside:avoid}
-  .c-check,.c-act,.chip-x,.chip-input,.chip-na,.row-act,.clash,.subtabs{display:none!important}
+  .chip-x,.chip-input,.chip-na,.row-act,.clash,.subtabs{display:none!important}
+  .c-act>*,.c-check>*{display:none!important}
+  .c-act,.c-check{padding:0!important;width:0!important}
+  .todo-row .c-check,th.c-check:has(.sr){padding:6px 0 6px 12px!important;width:30px!important}
+  .todo-row .c-check>*{display:inline-block!important;appearance:auto;-webkit-appearance:auto}
   .chips{min-height:0;border:0;padding:0;margin:0}
   .chip{border:0;background:none;padding:0;min-height:0;margin-right:6px}
   .status select{padding-top:0;padding-bottom:0}
@@ -395,7 +425,11 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .person.no-task{display:none!important}
   .person .fields,.person-actions,.person summary svg{display:none!important}
   .person summary{grid-template-columns:auto minmax(0,1fr) auto;min-height:0;padding:5px 9px;font-size:11pt}
-  .person summary>span:nth-child(4){display:none}
+  .person-hours,.person-todo,.person-flag{display:none!important}
+  .person-num:not(:empty)::after{content:" 項"}
+  .todo-add,.page-sub{display:none!important}
+  .todo-date{appearance:none;-webkit-appearance:none;border:0;padding:0;margin:0}
+  .c-due{font-size:9.5pt}
   .person .body{background:none;padding:6px 9px 8px;gap:6px}
   .tasks li{font-size:10pt}
 }
@@ -495,6 +529,23 @@ body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
     <button type="button" class="danger" id="aDelete">刪除區域</button>
     <span class="spacer"></span>
     <button type="button" id="aCancel">取消</button>
+    <button type="submit" class="primary">儲存</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgTodo"><form method="dialog" id="formTodo">
+  <h3>編輯待辦</h3>
+  <div class="fields">
+    <label class="wide">事項<input id="tTitle" required maxlength="200"></label>
+    <div class="field" style="flex:3 1 240px"><span>負責人（選填，可多位）</span><div id="tPeopleWrap"></div></div>
+    <label style="flex:1 1 130px">期限<input id="tDue" type="date"></label>
+    <label class="wide">備註<input id="tNote" maxlength="300"></label>
+  </div>
+  <p class="err" id="tErr" hidden></p>
+  <div class="row-end">
+    <button type="button" class="danger" id="tDelete">刪除</button>
+    <span class="spacer"></span>
+    <button type="button" id="tCancel">取消</button>
     <button type="submit" class="primary">儲存</button>
   </div>
 </form></dialog>
@@ -602,7 +653,7 @@ const busSessions=()=>BUS.map((b,i)=>({id:"bus"+i,room:"bus",day:b[0],start:b[1]
 function freshState(){
   let n=0;const roles={};
   for(const k in DEFAULT_ROLES) roles[k]=DEFAULT_ROLES[k].map(name=>({id:"r"+(++n),name}));
-  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},leadNeeds:{},areas:[],areaOverrides:{},jobs:[],notes:"",privateNotes:"",sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
+  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},leadNeeds:{},todos:[],areas:[],areaOverrides:{},jobs:[],notes:"",privateNotes:"",sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
 }
 function valid(s){return s&&typeof s==="object"&&Array.isArray(s.sessions)&&s.roles&&typeof s.roles==="object"}
 // 舊版資料：已填的人員全部保留，只移除沒填過的預設職務欄
@@ -632,6 +683,8 @@ function normalize(s){
   s.areas=(Array.isArray(s.areas)?s.areas:[]).filter(a=>a&&typeof a==="object"&&a.k&&a.name&&!BASE_ROOMS.some(r=>r.k===a.k));
   s.areaOverrides=s.areaOverrides&&typeof s.areaOverrides==="object"?s.areaOverrides:{};
   s.leadNeeds=s.leadNeeds&&typeof s.leadNeeds==="object"?s.leadNeeds:{};
+  s.todos=(Array.isArray(s.todos)?s.todos:[]).filter(x=>x&&typeof x==="object"&&x.id);
+  s.todos.forEach(x=>{x.title=String(x.title||"");x.people=String(x.people||"");x.note=String(x.note||"");x.due=/^\d{4}-\d{2}-\d{2}$/.test(x.due||"")?x.due:"";x.done=!!x.done});
   s.notes=String(s.notes||"");s.privateNotes=String(s.privateNotes||"");
   s.jobs=(Array.isArray(s.jobs)?s.jobs:[]).filter(j=>j&&typeof j==="object"&&j.id);
   s.jobs.forEach(j=>{j.title=String(j.title||"");j.people=String(j.people||"");j.note=String(j.note||"");j.need=Math.max(1,parseInt(j.need,10)||1);if(!STATUS.includes(j.status))j.status=STATUS[0]});
@@ -651,7 +704,7 @@ const mode={hosted:!!REPO,canEdit:!REPO,token:null,remoteText:null,publishing:fa
 let storageOK=true,state;
 try{const raw=REPO?null:localStorage.getItem(KEY);const p=raw?JSON.parse(raw):null;state=valid(p)?normalize(p):freshState()}
 catch(e){storageOK=false;state=freshState()}
-const ui={view:"overview",room:"main",jobFilter:"all",jobArea:"",areaFilter:"all",peopleQ:"",openPeople:new Set(),canRestore:false,sel:new Set(),selScope:"",boardDay:null,boardPerson:"",nowOverride:null,message:null,msgErr:false};
+const ui={view:"overview",room:"main",jobFilter:"all",jobArea:"",areaFilter:"all",peopleQ:"",openPeople:new Set(),canRestore:false,todoFilter:"open",peopleFilter:"all",peopleSort:{key:null,dir:1},sel:new Set(),selScope:"",boardDay:null,boardPerson:"",nowOverride:null,message:null,msgErr:false};
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -666,7 +719,7 @@ let saveTimer;
 function publishable(s){
   const people={};
   for(const n in s.people){const g=s.people[n]&&s.people[n].group;people[n]=g?{group:g}:{}}
-  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,leadNeeds:s.leadNeeds,areas:s.areas,areaOverrides:s.areaOverrides,jobs:s.jobs,notes:s.notes||"",sessions:s.sessions,people},null,1);
+  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,leadNeeds:s.leadNeeds,todos:s.todos,areas:s.areas,areaOverrides:s.areaOverrides,jobs:s.jobs,notes:s.notes||"",sessions:s.sessions,people},null,1);
 }
 function fmtTime(iso){const d=new Date(iso);if(isNaN(d))return "";const p=x=>String(x).padStart(2,"0");return p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())}
 function setHostedStatus(){
@@ -738,6 +791,7 @@ function allTasks(){
     const s=jobInfo(j);
     if(!map.has(n))map.set(n,[]);map.get(n).push({s,role:s.link?linkLabel(s.link):"自訂工作",roleId:"job"});
   }
+  for(const x of state.todos)for(const n of names(x.people))if(!map.has(n))map.set(n,[]);
   for(const n of Object.keys(state.people))if(!map.has(n))map.set(n,[]);
   map.forEach(list=>list.sort((a,b)=>dayOf(a.s.day).k.localeCompare(dayOf(b.s.day).k)||byTime(a.s,b.s)));
   return map;
@@ -766,12 +820,14 @@ function chipGet(kind,key,sub){
   if(kind==="lead")return state.leads[key]||"";
   if(kind==="job"){const j=state.jobs.find(x=>x.id===key);return j?j.people:""}
   if(kind==="assign"){const s=state.sessions.find(x=>x.id===key);return s?(s.assign[sub]||""):""}
+  if(kind==="todo"){const x=state.todos.find(y=>y.id===key);return x?x.people:""}
   return jobDraft;
 }
 function chipSet(kind,key,sub,v){
   if(kind==="lead")state.leads[key]=v;
   else if(kind==="job"){const j=state.jobs.find(x=>x.id===key);if(j)j.people=v}
   else if(kind==="assign"){const s=state.sessions.find(x=>x.id===key);if(s)s.assign[sub]=v}
+  else if(kind==="todo"){const x=state.todos.find(y=>y.id===key);if(x)x.people=v}
   else jobDraft=v;
 }
 function taskIds(kind,key){
@@ -809,7 +865,7 @@ function chipsHtml(kind,key,sub,label,need){
   if(na)h+='<span class="chip na">不需要<button type="button" class="chip-x" data-clear="1" aria-label="取消不需要">'+ICON.x+"</button></span>";
   h+=list.map(n=>'<span class="chip'+(badSet.has(n)?" bad":"")+'">'+esc(n)+'<button type="button" class="chip-x" data-remove="'+esc(n)+'" aria-label="移除 '+esc(n)+'">'+ICON.x+"</button></span>").join("");
   if(!na)h+='<input id="'+esc(chipId(kind,key,sub))+'" class="chip-input" list="peopleList" autocomplete="off" aria-label="'+esc((label||"負責人")+" 新增姓名")+'" placeholder="'+(list.length?(gap>0?"還缺 "+gap+" 人":"新增"):(kind==="draft"?"輸入姓名，按 Enter":"未指派"))+'">';
-  if(empty&&kind!=="draft"&&kind!=="job")h+='<button type="button" class="chip-na" data-naset="1">不需要</button>';
+  if(empty&&kind!=="draft"&&kind!=="job"&&kind!=="todo")h+='<button type="button" class="chip-na" data-naset="1">不需要</button>';
   if(need&&!na)h+=needTag(list.length,need);
   h+="</div>";
   if(clash.length)h+='<p class="clash">'+clash.map(c=>esc(c.n)+" 與 "+esc(c.hits.slice(0,2).join("、"))+(c.hits.length>2?" 等 "+c.hits.length+" 項":"")+" 重疊").join("；")+"</p>";
@@ -825,16 +881,17 @@ function renderTabs(){
   const ready=mode.loadState==="ready";
   const open=ready?state.jobs.filter(jobShort).length:0,bad=ready&&mode.canEdit?CTX.bad.size:0;
   const inRoom=ui.view==="room"&&ROOMS.some(r=>r.k===ui.room);
-  const cur=inRoom?"room":["board","jobs","people","notes"].includes(ui.view)?ui.view:"overview";
+  const cur=inRoom?"room":["board","jobs","todo","people","notes"].includes(ui.view)?ui.view:"overview";
+  const todoN=ready?state.todos.filter(x=>!x.done).length:0,todoLate=ready&&state.todos.some(todoOverdue);
   const count=(n,cls)=>n?'<span class="counter'+(cls?" "+cls:"")+'">'+n+"</span>":"";
-  const items=[["overview","各區負責人",""],["board","現場總表",""],["jobs","工作",count(open)],["people","人員",count(bad,"bad")],["notes","備註",""]];
+  const items=[["overview","各區負責人",""],["board","現場總表",""],["jobs","工作",count(open)],["todo","待辦",count(todoN,todoLate?"bad":"")],["people","人員",count(bad,"bad")],["notes","備註",""]];
   $("sideNav").innerHTML=items.map(([v,l,c])=>'<button type="button" class="nav-item'+(cur===v?" on":"")+'" data-tab="'+v+'"><span>'+l+"</span>"+c+"</button>").join("");
   $("sideAreas").innerHTML=ROOMS.map(r=>{
     const p=areaProgress(r.k),gap=ready?p.need-p.done:0;
     return '<button type="button" class="nav-item'+(inRoom&&ui.room===r.k?" on":"")+'" data-open-room="'+esc(r.k)+'"><span>'+esc(r.name)+"</span>"+(gap?'<span class="open-dot" title="有 '+gap+' 項未指派"></span>':"")+"</button>";
   }).join("");
   $("tabs").innerHTML=items.map(([v,l,c])=>'<button type="button" class="'+(cur===v||(v==="overview"&&cur==="room")?"on":"")+'" data-tab="'+v+'">'+l+(c?" "+c:"")+"</button>").join("");
-  const label={overview:"各區負責人",board:"現場總表",jobs:"工作",people:"人員",notes:"備註"}[cur];
+  const label={overview:"各區負責人",board:"現場總表",jobs:"工作",todo:"待辦",people:"人員",notes:"備註"}[cur];
   $("crumb").innerHTML='<span class="c-root">TAAI 2026</span>'
     +(inRoom?'<span class="c-mid"><button type="button" data-tab="overview">各區負責人</button></span><span class="c-mid">/</span><b>'+esc(roomOf(ui.room).name)+"</b>":'<span class="c-mid"><b>'+label+"</b></span>");
 }
@@ -1035,6 +1092,67 @@ function applyBoardPerson(){
   all.forEach(el=>{if(el.classList.contains("hit"))hits++});
   const c=$("boardHits");if(c)c.textContent=q?hits+" 項":"";
 }
+function todayISO(){return boardNow().date}
+function dayDiff(a,b){
+  const p=s=>{const [y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)};
+  return Math.round((p(b)-p(a))/864e5);
+}
+function fmtDue(iso){
+  const [y,m,d]=iso.split("-").map(Number);
+  return m+"/"+d+"（"+"日一二三四五六"[new Date(y,m-1,d).getDay()]+"）";
+}
+const todoOverdue=t=>!t.done&&!!t.due&&t.due<todayISO();
+function dueHint(t){
+  if(!t.due||t.done)return "";
+  const diff=dayDiff(todayISO(),t.due);
+  if(diff<0)return '<small class="due bad">逾期 '+(-diff)+" 天</small>";
+  if(diff===0)return '<small class="due warn">今天到期</small>';
+  return '<small class="due'+(diff<=3?" warn":"")+'">'+diff+" 天後</small>";
+}
+function todoRow(t){
+  const box='<input type="checkbox" class="todo-done" id="td-'+esc(t.id)+'" data-todo="'+esc(t.id)+'" aria-label="'+esc((t.done?"取消完成 ":"標記完成 ")+t.title)+'"'+(t.done?" checked":"")+(mode.canEdit?"":" disabled")+">";
+  const due=mode.canEdit
+    ?'<input type="date" class="todo-date" id="tdue-'+esc(t.id)+'" data-tododue="'+esc(t.id)+'" aria-label="'+esc(t.title+" 期限")+'" value="'+esc(t.due)+'">'
+    :(t.due?esc(fmtDue(t.due)):"");
+  return '<tr class="selectable todo-row'+(t.done?" done":"")+'"><td class="c-check">'+box+'</td><td class="c-title"><span class="t-strong todo-title">'+esc(t.title)+"</span>"+(t.note?'<small class="note">'+esc(t.note)+"</small>":"")+"</td>"
+    +'<td class="c-people">'+chipsHtml("todo",t.id,"",t.title)+'</td><td class="c-due">'+due+dueHint(t)+'</td><td class="c-act">'+editBtn("data-edittodo",t.id)+"</td></tr>";
+}
+function renderTodo(){
+  const open=state.todos.filter(t=>!t.done),done=state.todos.filter(t=>t.done);
+  if(ui.todoFilter==="done"&&!done.length)ui.todoFilter="open";
+  const toEvent=dayDiff(todayISO(),DAY_DATE.d1);
+  let h=banners()+'<div class="page-head"><div><h2>待辦</h2>'+(toEvent>0?'<p class="page-sub">距離會議還有 '+toEvent+" 天</p>":"")+'</div><span class="spacer"></span><button type="button" class="no-print" data-print="1">列印</button></div>';
+  if(mode.canEdit)h+='<section class="todo-add"><textarea id="todoNew" rows="1" aria-label="新增待辦" placeholder="新增待辦，按 Enter。可一次貼上多行，每行一項"></textarea><button type="button" class="primary" id="todoAdd">新增</button></section><p class="tip no-print">發布後所有人都看得到，請勿填寫電話或其他個資。</p>';
+  if(!state.todos.length){
+    h+='<section class="blank"><p>'+(mode.canEdit?"還沒有待辦。在上方輸入第一項，之後可以指派負責人和設定期限。":"目前還沒有待辦。")+"</p></section>";
+    $("main").innerHTML=h;return;
+  }
+  const f=(k,l,n)=>'<button type="button" data-todofilter="'+k+'" class="'+(ui.todoFilter===k?"on":"")+'">'+l+' <span class="counter">'+n+"</span></button>";
+  h+='<div class="toolbar"><div class="subtabs" role="group" aria-label="篩選待辦">'+f("open","未完成",open.length)+f("done","已完成",done.length)+f("all","全部",state.todos.length)+"</div></div>";
+  h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="c-check"><span class="sr">完成</span></th><th>事項</th><th>負責人</th><th>期限</th><th></th></tr></thead>';
+  const byDue=(a,b)=>(a.due||"9999").localeCompare(b.due||"9999");
+  const group=(title,rows)=>rows.length?'<tbody><tr class="group"><th colspan="5">'+esc(title)+"<span>"+rows.length+"</span></th></tr>"+rows.map(todoRow).join("")+"</tbody>":"";
+  if(ui.todoFilter!=="done"){
+    const today=todayISO(),sorted=[...open].sort(byDue);
+    h+=group("已逾期",sorted.filter(todoOverdue))
+      +group("7 天內",sorted.filter(t=>t.due&&t.due>=today&&dayDiff(today,t.due)<=7))
+      +group("之後",sorted.filter(t=>t.due&&dayDiff(today,t.due)>7))
+      +group("未定期限",sorted.filter(t=>!t.due));
+  }
+  if(ui.todoFilter!=="open")h+=group("已完成",[...done].sort(byDue));
+  if(ui.todoFilter==="open"&&!open.length)h+='<tbody><tr><td colspan="5" class="muted">全部都完成了。</td></tr></tbody>';
+  $("main").innerHTML=h+"</table></div>";
+}
+function addTodos(raw){
+  const lines=String(raw).split(/\n+/).map(x=>x.replace(/^\s*(?:\d+\s*[.、)）]|[-•*・])\s*/,"").trim()).filter(Boolean);
+  if(!lines.length)return 0;
+  const before=JSON.stringify(state);
+  for(const l of lines)state.todos.push({id:"t"+(state.nextId++),title:l.slice(0,200),people:"",due:"",note:"",done:false});
+  ui.todoFilter="open";save();refresh();
+  const box=$("todoNew");if(box)box.value="";
+  toast("已新增 "+lines.length+" 項待辦。",undoFrom(before));
+  return lines.length;
+}
 function renderNotes(){
   let h=banners()+'<div class="page-head"><h2>備註</h2></div>';
   if(mode.canEdit){
@@ -1110,13 +1228,14 @@ function renderOverview(){
   const openJobs=state.jobs.filter(jobShort).length;
   const seats=(q=>q.need-q.done)(sumProgress(state.sessions.filter(s=>s.room==="bus")));
   const others=ROOMS.filter(r=>r.k!=="bus").map(r=>({r,gap:(q=>q.need-q.done)(sumProgress(state.sessions.filter(s=>s.room===r.k)))})).filter(x=>x.gap>0);
-  const bad=mode.canEdit?CTX.bad.size:0;
+  const bad=mode.canEdit?CTX.bad.size:0,todoOpen=state.todos.filter(x=>!x.done).length,todoLate=state.todos.some(todoOverdue);
   const stat=(label,val,attrs,cls)=>'<button type="button" class="stat'+(val&&cls?" "+cls:"")+'" '+attrs+(val?"":" disabled")+'><span class="stat-label">'+esc(label)+'</span><span class="stat-value">'+val+"</span></button>";
   let h=banners()+'<div class="page-head"><h2>各區負責人</h2><span class="spacer"></span>'+(mode.canEdit?'<button type="button" data-addarea="1">新增區域</button>':"")+"</div>";
   h+='<div class="stats"><div class="stat" style="cursor:default"><span class="stat-label">已指派</span><span class="stat-value">'+tp.done+" <small>/ "+tp.need+"</small></span></div>"
     +stat("區域缺人",openAreas,'data-stat="areas"',"warn")
     +stat("隨車缺人",seats,'data-stat="bus"',"warn")
     +stat("工作缺人",openJobs,'data-stat="jobs"',"warn")
+    +stat("待辦未完成",todoOpen,'data-stat="todo"',todoLate?"bad":"warn")
     +others.map(x=>stat(x.r.name+"缺人",x.gap,'data-stat="room" data-stat-room="'+esc(x.r.k)+'"',"warn")).join("")
     +(mode.canEdit?stat("時段重疊",bad,'data-stat="people"',"bad"):"")+"</div>";
   const openN=ROOMS.filter(areaIsOpen).length;
@@ -1137,6 +1256,8 @@ function personText(n,list){
   const allDay=list.filter(t=>t.s.noTime);
   if(allDay.length)out+="\n全程\n"+allDay.map(taskLine).join("\n")+"\n";
   for(const d of DAYS){const ds=list.filter(t=>t.s.day===d.k&&!t.s.noTime);if(!ds.length)continue;out+="\n"+d.short+"\n"+ds.map(taskLine).join("\n")+"\n"}
+  const mine=state.todos.filter(x=>!x.done&&names(x.people).includes(n));
+  if(mine.length)out+="\n籌備待辦\n"+mine.map(x=>(x.due?fmtDue(x.due)+"  ":"")+x.title).join("\n")+"\n";
   return out.trim();
 }
 const SEP=/([,，、;；\/／\n]+)/;
@@ -1148,6 +1269,7 @@ function eachField(fn){
   for(const s of state.sessions)for(const r in s.assign)s.assign[r]=mapNames(s.assign[r],fn);
   for(const k in state.leads)state.leads[k]=mapNames(state.leads[k],fn);
   for(const j of state.jobs)j.people=mapNames(j.people,fn);
+  for(const x of state.todos)x.people=mapNames(x.people,fn);
 }
 function renamePerson(oldName,newName){
   if(state.people[newName]||allTasks().has(newName)){
@@ -1192,27 +1314,70 @@ function personTasksHtml(list,cf){
   }
   return h;
 }
+function personMinutes(list){
+  const toMin=s=>{const [h,m]=s.split(":").map(Number);return h*60+m};
+  const byDay={};
+  for(const t of list){
+    if(t.s.noTime||!t.s.start||!t.s.end)continue;
+    (byDay[t.s.day]=byDay[t.s.day]||[]).push([toMin(t.s.start),toMin(t.s.end)]);
+  }
+  let total=0;
+  for(const d in byDay){
+    let end=-1;
+    for(const [a,b] of byDay[d].sort((x,y)=>x[0]-y[0])){
+      if(b<=end)continue;
+      total+=b-Math.max(a,end);end=b;
+    }
+  }
+  return total;
+}
+function fmtHours(m){return m?String(Math.round(m/6)/10):""}
+function todosOf(n){return state.todos.filter(t=>!t.done&&names(t.people).includes(n))}
 function renderPeople(){
   const map=CTX.tasks,bad=mode.canEdit?CTX.bad:new Map();
-  const ns=[...map.keys()].sort((a,b)=>(bad.has(b)?1:0)-(bad.has(a)?1:0)||a.localeCompare(b,"zh-Hant"));
-  let h=banners()+'<div class="page-head no-print"><h2>人員</h2><span class="page-sub">'+ns.length+' 人</span><span class="spacer"></span><button type="button" data-print="1">列印工作單</button></div><p class="print-title print-only"><b>TAAI 2026 個人工作單</b><span>'+esc(state.updatedAt?"資料更新 "+fmtTime(state.updatedAt):"")+"</span></p>";
-  h+='<section class="add-people"><input id="peopleQ" type="search" aria-label="搜尋人員" placeholder="搜尋姓名或組別" value="'+esc(ui.peopleQ)+'">';
-  if(mode.canEdit)h+='<textarea id="bulk" rows="1" aria-label="新增人員" placeholder="新增人員，多人用頓號或換行分開"></textarea><button type="button" id="bulkAdd">新增</button>';
-  h+="</section>";
-  if(!ns.length)h+='<section class="blank"><p>還沒有人員。指派工作時輸入的姓名也會自動出現在這裡。</p></section>';
-  else{
-    h+='<section class="people"><div class="people-head"><span>姓名</span><span>組別</span><span>工作</span><span></span><span></span></div>';
-    const q=ui.peopleQ.trim().toLowerCase();
-    ns.forEach((n,i)=>{
-      const list=map.get(n),info=state.people[n]||{},cf=bad.get(n),search=(n+" "+(info.group||"")).toLowerCase();
-      h+='<details class="person'+(list.length?"":" no-task")+'" data-person="'+esc(n)+'" data-search="'+esc(search)+'"'+(ui.openPeople.has(n)?" open":"")+(q&&!search.includes(q)?" hidden":"")+'><summary><span class="person-name">'+esc(n)+'</span><span class="person-group">'+esc(info.group||"")+'</span><span class="person-num">'+(list.length?list.length+" 項":"無")+"</span><span>"+(cf?'<span class="tag-bad">時段重疊</span>':"")+"</span>"+ICON.next+'</summary><div class="body">';
-      if(mode.canEdit)h+='<div class="fields"><label>姓名<input id="pname-'+i+'" data-rename="'+esc(n)+'" value="'+esc(n)+'"></label><label>組別<input id="pgroup-'+i+'" data-pinfo="group" data-p="'+esc(n)+'" value="'+esc(info.group||"")+'"></label><label>聯絡方式'+(mode.hosted?"（不會發布）":"")+'<input id="pcontact-'+i+'" data-pinfo="contact" data-p="'+esc(n)+'" value="'+esc(info.contact||"")+'"></label></div>';
-      h+=list.length?personTasksHtml(list,cf):'<p class="tip">還沒有分配工作。</p>';
-      h+='<div class="person-actions">'+(list.length?'<button type="button" data-copy="'+i+'">複製工作單</button>':"<span></span>")+(mode.canEdit?'<button type="button" class="danger" data-delperson="'+esc(n)+'">移除</button>':"")+"</div>";
-      h+='<textarea id="txt-'+i+'" hidden readonly>'+esc(personText(n,list))+"</textarea></div></details>";
-    });
-    h+="</section>";
+  let rows=[...map.keys()].map(n=>{
+    const list=map.get(n),info=state.people[n]||{},todos=todosOf(n);
+    return {n,list,info,todos,cf:bad.get(n),mins:personMinutes(list)};
+  });
+  const noneN=rows.filter(r=>!r.list.length&&!r.todos.length).length,clashN=rows.filter(r=>r.cf).length;
+  if(ui.peopleFilter==="none"&&!noneN)ui.peopleFilter="all";
+  if(ui.peopleFilter==="clash"&&!clashN)ui.peopleFilter="all";
+  const total=rows.length;
+  if(ui.peopleFilter==="none")rows=rows.filter(r=>!r.list.length&&!r.todos.length);
+  if(ui.peopleFilter==="clash")rows=rows.filter(r=>r.cf);
+  const name=(a,b)=>a.n.localeCompare(b.n,"zh-Hant"),{key,dir}=ui.peopleSort;
+  rows.sort((a,b)=>{
+    if(key==="name")return dir*name(a,b);
+    if(key==="group")return dir*(a.info.group||"￿").localeCompare(b.info.group||"￿","zh-Hant")||name(a,b);
+    if(key==="count")return dir*(a.list.length-b.list.length)||name(a,b);
+    if(key==="hours")return dir*(a.mins-b.mins)||name(a,b);
+    if(key==="todo")return dir*(a.todos.length-b.todos.length)||name(a,b);
+    return (b.cf?1:0)-(a.cf?1:0)||name(a,b);
+  });
+  let h=banners()+'<div class="page-head no-print"><h2>人員</h2><span class="page-sub">'+total+' 人</span><span class="spacer"></span><button type="button" data-print="1">列印工作單</button></div><p class="print-title print-only"><b>TAAI 2026 個人工作單</b><span>'+esc(state.updatedAt?"資料更新 "+fmtTime(state.updatedAt):"")+"</span></p>";
+  if(mode.canEdit)h+='<section class="add-people"><textarea id="bulk" rows="1" aria-label="新增人員" placeholder="新增人員，多人用頓號或換行分開"></textarea><button type="button" id="bulkAdd">新增</button></section>';
+  if(!total){
+    h+='<section class="blank"><p>還沒有人員。指派工作時輸入的姓名也會自動出現在這裡。</p></section>';
+    $("main").innerHTML=h;return;
   }
+  const f=(k,l,n)=>'<button type="button" data-peoplefilter="'+k+'" class="'+(ui.peopleFilter===k?"on":"")+'">'+l+' <span class="counter">'+n+"</span></button>";
+  h+='<div class="toolbar"><div class="subtabs" role="group" aria-label="篩選人員">'+f("all","全部",total)+(noneN?f("none","沒有工作",noneN):"")+(clashN?f("clash","時段重疊",clashN):"")+'</div><div class="board-find"><input id="peopleQ" type="search" aria-label="搜尋人員" placeholder="搜尋姓名或組別" value="'+esc(ui.peopleQ)+'"></div></div>';
+  const head=(k,l,cls)=>{
+    const on=key===k,arrow=on?(dir>0?" ↑":" ↓"):"";
+    return '<button type="button" class="'+(on?"on":"")+(cls?" "+cls:"")+'" data-psort="'+k+'" aria-label="依'+l+'排序'+(on?(dir>0?"，目前遞增":"，目前遞減"):"")+'">'+l+arrow+"</button>";
+  };
+  h+='<section class="people"><div class="people-head">'+head("name","姓名")+head("group","組別")+head("count","工作","num")+head("hours","時數","num")+head("todo","待辦","num")+"<span></span><span></span></div>";
+  const q=ui.peopleQ.trim().toLowerCase();
+  rows.forEach((r,i)=>{
+    const {n,list,info,cf,todos,mins}=r,search=(n+" "+(info.group||"")).toLowerCase();
+    h+='<details class="person'+(list.length||todos.length?"":" no-task")+'" data-person="'+esc(n)+'" data-search="'+esc(search)+'"'+(ui.openPeople.has(n)?" open":"")+(q&&!search.includes(q)?" hidden":"")+'><summary><span class="person-name">'+esc(n)+'</span><span class="person-group">'+esc(info.group||"")+'</span><span class="person-num">'+(list.length||"")+'</span><span class="person-num person-hours">'+fmtHours(mins)+'</span><span class="person-num person-todo">'+(todos.length||"")+'</span><span class="person-flag">'+(cf?'<span class="tag-bad">時段重疊</span>':"")+"</span>"+ICON.next+'</summary><div class="body">';
+    if(mode.canEdit)h+='<div class="fields"><label>姓名<input id="pname-'+i+'" data-rename="'+esc(n)+'" value="'+esc(n)+'"></label><label>組別<input id="pgroup-'+i+'" data-pinfo="group" data-p="'+esc(n)+'" value="'+esc(info.group||"")+'"></label><label>聯絡方式'+(mode.hosted?"（不會發布）":"")+'<input id="pcontact-'+i+'" data-pinfo="contact" data-p="'+esc(n)+'" value="'+esc(info.contact||"")+'"></label></div>';
+    h+=list.length?personTasksHtml(list,cf):(todos.length?"":'<p class="tip">還沒有分配工作。</p>');
+    if(todos.length)h+='<div class="day-tasks"><div class="day-label">籌備待辦</div><ul class="tasks">'+todos.map(t=>'<li><span class="t">'+(t.due?esc(fmtDue(t.due)):"未定期限")+"</span><span>"+esc(t.title)+"</span></li>").join("")+"</ul></div>";
+    h+='<div class="person-actions">'+(list.length||todos.length?'<button type="button" data-copy="'+i+'">複製工作單</button>':"<span></span>")+(mode.canEdit?'<button type="button" class="danger" data-delperson="'+esc(n)+'">移除</button>':"")+"</div>";
+    h+='<textarea id="txt-'+i+'" hidden readonly>'+esc(personText(n,list))+"</textarea></div></details>";
+  });
+  h+="</section>";
   $("main").innerHTML=h;
 }
 function applyMode(){
@@ -1275,6 +1440,7 @@ function render(){
   try{
     renderTabs();
     if(ui.view==="board")renderBoard();
+    else if(ui.view==="todo")renderTodo();
     else if(ui.view==="people")renderPeople();
     else if(ui.view==="jobs")renderJobs();
     else if(ui.view==="notes")renderNotes();
@@ -1300,7 +1466,7 @@ function refresh(){
 function parseHash(){
   const h=location.hash.slice(1);
   if(h.startsWith("room-")){ui.view="room";ui.room=h.slice(5)}
-  else ui.view=["board","jobs","people","notes"].includes(h)?h:"overview";
+  else ui.view=["board","jobs","todo","people","notes"].includes(h)?h:"overview";
 }
 function go(view,room){
   const h=view==="room"?"room-"+room:view;
@@ -1398,6 +1564,18 @@ $("main").addEventListener("input",e=>{
 $("main").addEventListener("change",e=>{
   const el=e.target;
   if(el.id==="jobArea"){ui.jobArea=el.value;ui.sel.clear();refresh();return}
+  if(el.dataset.todo){
+    const x=state.todos.find(y=>y.id===el.dataset.todo);if(!x)return;
+    const before=JSON.stringify(state);
+    x.done=el.checked;save();refresh();
+    if(x.done)toast("已完成「"+x.title+"」。",undoFrom(before));
+    return;
+  }
+  if(el.dataset.tododue){
+    const x=state.todos.find(y=>y.id===el.dataset.tododue);
+    if(x){x.due=el.value;save();refresh()}
+    return;
+  }
   if(el.dataset.stkind){
     const k=el.dataset.stkind,key=el.dataset.stkey,v=el.value;
     if(k==="lead")state.leadStatus[key]=v;
@@ -1411,6 +1589,11 @@ $("main").addEventListener("change",e=>{
     if(!v||v===o){el.value=o;return}
     if(renamePerson(o,v)){ui.openPeople.delete(o);ui.openPeople.add(v);save();refresh()}else el.value=o;
   }
+});
+$("main").addEventListener("keydown",e=>{
+  if(e.target.id!=="todoNew"||e.key!=="Enter"||e.shiftKey||e.isComposing||e.keyCode===229)return;
+  e.preventDefault();
+  addTodos(e.target.value);
 });
 $("main").addEventListener("toggle",e=>{
   const p=e.target.dataset&&e.target.dataset.person;
@@ -1435,6 +1618,17 @@ $("main").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b||b.closest("[data-chips]"))return;
   const d=b.dataset;
   if(d.print){window.print();return}
+  if(d.psort){
+    const s=ui.peopleSort;
+    if(s.key===d.psort)s.dir=-s.dir;
+    else{s.key=d.psort;s.dir=["name","group"].includes(d.psort)?1:-1}
+    refresh();return;
+  }
+  if(d.peoplefilter){ui.peopleFilter=d.peoplefilter;refresh();return}
+  if(d.todofilter){ui.todoFilter=d.todofilter;refresh();return}
+  if(d.edittodo){openTodo(d.edittodo);return}
+  if(b.id==="todoAdd"){if(!addTodos($("todoNew").value)){toast("請先輸入待辦事項。");$("todoNew").focus()}return}
+  if(d.stat==="todo"){ui.todoFilter="open";go("todo");return}
   if(d.boardday){ui.boardDay=d.boardday;refresh();return}
   if(d.batch==="clear"){ui.sel.clear();refresh();return}
   if(d.batch==="delete"){batchDelete();return}
@@ -1560,7 +1754,7 @@ function openJob(id,opts){
   $("jStart").value=(j&&j.start)||"08:00";
   $("jEnd").value=(j&&j.end)||"09:00";
   $("jNeed").value=j?jobNeed(j):1;
-  draftWrap="jPeopleWrap";$("bPeopleWrap").innerHTML="";
+  setDraftWrap("jPeopleWrap");
   jobDraft=j?j.people:"";renderDraft();
   $("jNote").value=j?j.note:"";
   $("jErr").hidden=true;$("jDelete").hidden=!j;
@@ -1611,7 +1805,7 @@ function openBatch(kind){
   $("bRole").innerHTML=roles.map(r=>'<option value="'+esc(r.id)+'">'+esc(r.name)+"</option>").join("");
   $("bNeedWrap").hidden=kind!=="jobs";
   $("bNeed").value="";$("bMode").value="add";$("bStatus").value="";
-  draftWrap="bPeopleWrap";$("jPeopleWrap").innerHTML="";
+  setDraftWrap("bPeopleWrap");
   jobDraft="";renderDraft();
   $("bErr").hidden=true;
   $("dlgBatch").showModal();
@@ -1650,6 +1844,37 @@ function batchDelete(){
   ui.sel.clear();save();refresh();
   toast("已刪除 "+n+" 項工作。",undoFrom(before));
 }
+
+// 待辦編輯視窗
+let editingTodo=null;
+function setDraftWrap(id){
+  ["jPeopleWrap","bPeopleWrap","tPeopleWrap"].forEach(x=>{if(x!==id)$(x).innerHTML=""});
+  draftWrap=id;
+}
+function openTodo(id){
+  const t=state.todos.find(x=>x.id===id);if(!t)return;
+  editingTodo=id;
+  $("tTitle").value=t.title;$("tDue").value=t.due;$("tNote").value=t.note;
+  setDraftWrap("tPeopleWrap");jobDraft=t.people;renderDraft();
+  $("tErr").hidden=true;
+  $("dlgTodo").showModal();
+}
+$("tCancel").addEventListener("click",()=>$("dlgTodo").close());
+$("tDelete").addEventListener("click",()=>{
+  const t=state.todos.find(x=>x.id===editingTodo);if(!t)return;
+  const before=JSON.stringify(state);
+  state.todos=state.todos.filter(x=>x!==t);
+  $("dlgTodo").close();save();refresh();
+  toast("已刪除「"+t.title+"」。",undoFrom(before));
+});
+$("formTodo").addEventListener("submit",e=>{
+  const typed=$("chip-draft-job");if(typed)commitChip(typed);
+  const title=$("tTitle").value.trim();
+  if(!title){e.preventDefault();$("tErr").hidden=false;$("tErr").textContent="請填寫事項名稱。";return}
+  const t=state.todos.find(x=>x.id===editingTodo);if(!t)return;
+  Object.assign(t,{title:title.slice(0,200),due:$("tDue").value,people:jobDraft,note:$("tNote").value.trim()});
+  save();refresh();
+});
 
 // 區域編輯視窗
 let editingArea=null;
@@ -1792,7 +2017,7 @@ function sheetXml(rows){
 }
 function buildXlsx(){
   const leadRows=[["區域","地點","負責人","需求人數","已指派人數","狀態"],...ROOMS.filter(r=>r.lead).map(r=>[r.name,r.place,(state.leads[r.k]||"").trim(),leadNeed(r.k),names(state.leads[r.k]).length,state.leadStatus[r.k]||STATUS[0]])];
-  const sheets=[{name:"負責人總覽",rows:leadRows},{name:"工作",rows:jobRows()},...(state.notes.trim()?[{name:"備註",rows:[["備註"],...state.notes.split("\n").map(x=>[x])]}]:[]),{name:"總表",rows:flatRows()},...ROOMS.map(r=>({name:r.name,rows:roomRows(r)})),{name:"人員工作單",rows:peopleRows()}];
+  const sheets=[{name:"負責人總覽",rows:leadRows},{name:"工作",rows:jobRows()},{name:"待辦",rows:[["事項","負責人","期限","狀態","備註"],...[...state.todos].sort((a,b)=>Number(a.done)-Number(b.done)||(a.due||"9999").localeCompare(b.due||"9999")).map(x=>[x.title,x.people.trim(),x.due,x.done?"已完成":"未完成",x.note])]},...(state.notes.trim()?[{name:"備註",rows:[["備註"],...state.notes.split("\n").map(x=>[x])]}]:[]),{name:"總表",rows:flatRows()},...ROOMS.map(r=>({name:r.name,rows:roomRows(r)})),{name:"人員工作單",rows:peopleRows()}];
   const seen=new Set();
   sheets.forEach(s=>{
     const base=(String(s.name).replace(/[\[\]:*?\/\\]/g," ").trim()||"工作表").slice(0,28);let n=base,c=2;
@@ -1901,6 +2126,13 @@ function diffLines(local,remote){
     if(!r){out.push("工作「"+j.title+"」只在這台");continue}
     if(fmt(j.people)!==fmt(r.people))out.push("工作「"+j.title+"」：線上「"+fmt(r.people)+"」，這台「"+fmt(j.people)+"」");
     else if(j.title!==r.title||j.linkId!==r.linkId||j.note!==r.note||j.need!==r.need||j.start!==r.start||j.end!==r.end)out.push("工作「"+j.title+"」內容不同");
+  }
+  const lt=new Map((local.todos||[]).map(x=>[x.id,x])),rt=new Map((remote.todos||[]).map(x=>[x.id,x]));
+  for(const [id,x] of rt)if(!lt.has(id))out.push("待辦「"+x.title+"」只在線上版");
+  for(const [id,x] of lt){
+    const r=rt.get(id);
+    if(!r)out.push("待辦「"+x.title+"」只在這台");
+    else if(JSON.stringify(x)!==JSON.stringify(r))out.push("待辦「"+x.title+"」內容不同");
   }
   const ls=new Map(local.sessions.map(s=>[s.id,s])),rs=new Map(remote.sessions.map(s=>[s.id,s]));
   for(const [id,s] of rs){
