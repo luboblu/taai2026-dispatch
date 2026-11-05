@@ -9,13 +9,13 @@
 /* 版面：左側固定導覽，右側是工具列與資料表。中性灰階、細線分隔、小圓角，色彩只用在狀態。 */
 :root{
   --bg:#ffffff;--side:#f7f8f9;--surface2:#f4f5f6;--hover:#f7f8f9;--line:#e4e6e9;--line2:#cfd3d8;
-  --fg:#1b1f24;--muted:#646c76;--ink:#1b1f24;--ink-fg:#ffffff;--accent:#0b63ce;
+  --fg:#1b1f24;--muted:#646c76;--selected:#eef3fb;--ink:#1b1f24;--ink-fg:#ffffff;--accent:#0b63ce;
   --warn:#946200;--bad:#c02b2b;--good:#1a7f45;--neutral:#9aa1aa;
   --sans:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei","Segoe UI",sans-serif;
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#111315;--side:#0d0f10;--surface2:#1a1d20;--hover:#16191b;--line:#272b2f;--line2:#3b4046;
-  --fg:#e6e8eb;--muted:#99a1ab;--ink:#e6e8eb;--ink-fg:#111315;--accent:#5ba4f5;
+  --fg:#e6e8eb;--muted:#99a1ab;--selected:#1a2531;--ink:#e6e8eb;--ink-fg:#111315;--accent:#5ba4f5;
   --warn:#d7a84d;--bad:#ef7d75;--good:#57bd7f;--neutral:#6d747d;
   color-scheme:dark;
 }}
@@ -207,6 +207,7 @@ tr.sub td{background:none}
 .fields .wide{flex-basis:100%}
 .fields input,.fields select,textarea{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:5px 9px;color:var(--fg);font-size:13.5px;max-width:100%;min-height:32px}
 .fields .chips{color:var(--fg);margin:0;border-color:var(--line2);min-height:32px}
+.fields .chips.empty .chip-input::placeholder{color:var(--muted)}
 .fields .chip-input{width:60px;border:0;background:none;padding:1px 3px;min-height:0}
 dialog{border:1px solid var(--line2);border-radius:9px;background:var(--bg);color:var(--fg);width:min(480px,calc(100vw - 32px));padding:18px;box-shadow:0 16px 48px rgba(0,0,0,.22)}
 dialog::backdrop{background:rgba(10,12,14,.42)}
@@ -237,6 +238,26 @@ dialog h3{font-size:15px;font-weight:600}
 .sk-row:last-child{border-bottom:0}
 @keyframes sk{50%{opacity:.5}}
 @media (prefers-reduced-motion:reduce){.sk{animation:none}}
+.c-check{width:30px;padding-right:0!important}
+.tbl input[type=checkbox]{width:15px;height:15px;margin:0;vertical-align:middle;accent-color:var(--ink);cursor:pointer}
+.tbl tr.group th label{display:inline-flex;gap:12px;align-items:center;cursor:pointer}
+.tbl tr.group th label span{margin-left:-6px}
+.tbl tbody tr.selected td{background:var(--selected)}
+.need{flex:none;margin-left:auto;padding:0 3px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.need.short{color:var(--warn);font-weight:600}
+.need.over{color:var(--bad);font-weight:600}
+.names+.need,.none+.need{margin-left:8px}
+.chips.short .chip-input::placeholder{color:var(--warn)}
+.chips.short .chip-input:focus::placeholder{color:var(--muted)}
+.batchbar{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:calc(216px + (100vw - 216px)/2);transform:translateX(-50%);z-index:6;display:flex;flex-wrap:wrap;align-items:center;gap:2px;background:var(--ink);color:var(--ink-fg);border-radius:8px;padding:5px 6px 5px 14px;box-shadow:0 10px 30px rgba(0,0,0,.28);max-width:calc(100vw - 248px);font-size:13px}
+.batch-count{font-weight:500;margin-right:8px;white-space:nowrap}
+.batchbar button{background:none;border-color:transparent;color:inherit}
+.batchbar button:hover{background:rgba(127,127,127,.3)}
+.batch-sep{width:1px;height:16px;background:currentColor;opacity:.25;margin:0 4px}
+body.has-batch main{padding-bottom:96px}
+body.has-batch #toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+.toast-undo{background:none;border:0;color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px;min-height:0;padding:0;margin-left:12px}
+.toast-undo:hover{background:none;opacity:.8}
 .ro .edit-only{display:none!important}
 
 @media (max-width:860px){
@@ -252,6 +273,7 @@ dialog h3{font-size:15px;font-weight:600}
   .tabs button.on{color:var(--fg);font-weight:600;border-bottom-color:var(--ink)}
   main{padding:16px 16px 48px;gap:14px}
   .toolbar{margin-bottom:-14px}
+  .batchbar{left:16px;right:16px;transform:none;max-width:none}
 }
 @media (max-width:680px){
   .tbl,.tbl tbody,.tbl tr,.tbl td,.tbl th{display:block}
@@ -261,6 +283,8 @@ dialog h3{font-size:15px;font-weight:600}
   .tbl td{border:0!important;padding:0;width:auto;min-width:0;background:none!important}
   .tbl td:empty{display:none}
   .tbl tr.group th{border-bottom:1px solid var(--line)}
+  .tbl tbody tr.selectable{position:relative;padding-left:38px}
+  .tbl td.c-check{position:absolute;left:12px;top:10px;width:auto}
   .c-time{grid-column:1}
   .c-act{grid-column:2;grid-row:1}
   .c-title{grid-column:1}
@@ -349,13 +373,14 @@ dialog h3{font-size:15px;font-weight:600}
   <h3 id="dlgJobTitle">新增工作</h3>
   <div class="fields">
     <label class="wide">工作名稱<input id="jTitle" required maxlength="100" ></label>
-    <label class="wide">對應的議程場次<select id="jLink"></select></label>
+    <label class="wide" id="jLinkWrap">對應的議程場次<select id="jLink"></select></label>
     <p class="tip wide" id="jLinkInfo" hidden style="flex-basis:100%"></p>
     <label id="jRoomWrap">區域<select id="jRoom"></select></label>
     <label id="jDayWrap">日期<select id="jDay"></select></label>
     <label id="jStartWrap">開始<input id="jStart" type="time"></label>
     <label id="jEndWrap">結束<input id="jEnd" type="time"></label>
-    <div class="field wide"><span>負責人（選填，可多位）</span><div id="jPeopleWrap"></div></div>
+    <div class="field" style="flex:3 1 260px"><span>負責人（選填，可多位）</span><div id="jPeopleWrap"></div></div>
+    <label style="flex:1 1 90px">需求人數<input id="jNeed" type="number" min="1" max="99" step="1" value="1"></label>
     <label class="wide">備註<input id="jNote" maxlength="200"></label>
   </div>
   <p class="err" id="jErr" hidden></p>
@@ -371,7 +396,8 @@ dialog h3{font-size:15px;font-weight:600}
   <h3 id="dlgAreaTitle">新增區域</h3>
   <div class="fields">
     <label style="flex-basis:100%">區域名稱<input id="aName" required maxlength="40" ></label>
-    <label style="flex-basis:100%">地點<input id="aPlace" maxlength="60" placeholder="選填"></label>
+    <label style="flex:3 1 220px">地點<input id="aPlace" maxlength="60" placeholder="選填"></label>
+    <label style="flex:1 1 90px" id="aNeedWrap">需求人數<input id="aNeed" type="number" min="1" max="99" step="1" value="1"></label>
   </div>
   <p class="err" id="aErr" hidden></p>
   <div class="row-end">
@@ -379,6 +405,22 @@ dialog h3{font-size:15px;font-weight:600}
     <span class="spacer"></span>
     <button type="button" id="aCancel">取消</button>
     <button type="submit" class="primary">儲存</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgBatch"><form method="dialog" id="formBatch">
+  <h3 id="bTitle">批次編輯</h3>
+  <div class="fields">
+    <label class="wide" id="bRoleWrap">職務<select id="bRole"></select></label>
+    <div class="field wide"><span>人員</span><div id="bPeopleWrap"></div></div>
+    <label>人員處理方式<select id="bMode"><option value="add">加入現有人員</option><option value="set">取代現有人員</option></select></label>
+    <label id="bNeedWrap">需求人數<input id="bNeed" type="number" min="1" max="99" step="1" placeholder="不變更"></label>
+    <label>通知狀態<select id="bStatus"><option value="">不變更</option><option>未通知</option><option>已通知</option><option>已確認</option></select></label>
+  </div>
+  <p class="err" id="bErr" hidden></p>
+  <div class="row-end">
+    <button type="button" id="bCancel">取消</button>
+    <button type="submit" class="primary">套用</button>
   </div>
 </form></dialog>
 
@@ -469,7 +511,7 @@ const busSessions=()=>BUS.map((b,i)=>({id:"bus"+i,room:"bus",day:b[0],start:b[1]
 function freshState(){
   let n=0;const roles={};
   for(const k in DEFAULT_ROLES) roles[k]=DEFAULT_ROLES[k].map(name=>({id:"r"+(++n),name}));
-  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},areas:[],areaOverrides:{},jobs:[],notes:"",privateNotes:"",sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
+  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},leadNeeds:{},areas:[],areaOverrides:{},jobs:[],notes:"",privateNotes:"",sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
 }
 function valid(s){return s&&typeof s==="object"&&Array.isArray(s.sessions)&&s.roles&&typeof s.roles==="object"}
 // 舊版資料：已填的人員全部保留，只移除沒填過的預設職務欄
@@ -498,9 +540,10 @@ function normalize(s){
   s.nextId=Number(s.nextId)||5000;
   s.areas=(Array.isArray(s.areas)?s.areas:[]).filter(a=>a&&typeof a==="object"&&a.k&&a.name&&!BASE_ROOMS.some(r=>r.k===a.k));
   s.areaOverrides=s.areaOverrides&&typeof s.areaOverrides==="object"?s.areaOverrides:{};
+  s.leadNeeds=s.leadNeeds&&typeof s.leadNeeds==="object"?s.leadNeeds:{};
   s.notes=String(s.notes||"");s.privateNotes=String(s.privateNotes||"");
   s.jobs=(Array.isArray(s.jobs)?s.jobs:[]).filter(j=>j&&typeof j==="object"&&j.id);
-  s.jobs.forEach(j=>{j.title=String(j.title||"");j.people=String(j.people||"");j.note=String(j.note||"");if(!STATUS.includes(j.status))j.status=STATUS[0]});
+  s.jobs.forEach(j=>{j.title=String(j.title||"");j.people=String(j.people||"");j.note=String(j.note||"");j.need=Math.max(1,parseInt(j.need,10)||1);if(!STATUS.includes(j.status))j.status=STATUS[0]});
   ROOMS.forEach(r=>{if(!Array.isArray(s.roles[r.k]))s.roles[r.k]=[]});
   s.sessions.forEach(x=>{x.assign=x.assign&&typeof x.assign==="object"?x.assign:{};if(!STATUS.includes(x.status))x.status=STATUS[0];x.note=x.note||"";x.sub=x.sub||""});
   return s;
@@ -517,7 +560,7 @@ const mode={hosted:!!REPO,canEdit:!REPO,token:null,remoteText:null,publishing:fa
 let storageOK=true,state;
 try{const raw=REPO?null:localStorage.getItem(KEY);const p=raw?JSON.parse(raw):null;state=valid(p)?normalize(p):freshState()}
 catch(e){storageOK=false;state=freshState()}
-const ui={view:"overview",room:"main",jobFilter:"all",jobArea:"",areaFilter:"all",peopleQ:"",openPeople:new Set(),canRestore:false,message:null,msgErr:false};
+const ui={view:"overview",room:"main",jobFilter:"all",jobArea:"",areaFilter:"all",peopleQ:"",openPeople:new Set(),canRestore:false,sel:new Set(),selScope:"",message:null,msgErr:false};
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -532,7 +575,7 @@ let saveTimer;
 function publishable(s){
   const people={};
   for(const n in s.people){const g=s.people[n]&&s.people[n].group;people[n]=g?{group:g}:{}}
-  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,areas:s.areas,areaOverrides:s.areaOverrides,jobs:s.jobs,notes:s.notes||"",sessions:s.sessions,people},null,1);
+  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,leadNeeds:s.leadNeeds,areas:s.areas,areaOverrides:s.areaOverrides,jobs:s.jobs,notes:s.notes||"",sessions:s.sessions,people},null,1);
 }
 function fmtTime(iso){const d=new Date(iso);if(isNaN(d))return "";const p=x=>String(x).padStart(2,"0");return p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())}
 function setHostedStatus(){
@@ -571,11 +614,15 @@ function jobInfo(j){
   return s?{id:"job-"+j.id,room:s.room,day:s.day,start:s.start,end:s.end,title:j.title,link:s,linkId:s.id}:{id:"job-"+j.id,room:j.room,day:j.day,start:j.start,end:j.end,title:j.title,link:null,linkId:null};
 }
 const jobsInRoom=k=>state.jobs.filter(j=>jobInfo(j).room===k);
+const leadNeed=k=>Math.max(1,parseInt(state.leadNeeds&&state.leadNeeds[k],10)||1);
+const jobNeed=j=>Math.max(1,parseInt(j.need,10)||1);
+const jobShort=j=>names(j.people).length<jobNeed(j);
+const leadShort=r=>r.lead&&!isNA(state.leads[r.k])&&names(state.leads[r.k]).length<leadNeed(r.k);
 function linkLabel(s){const code=/^[A-Z]+\d+/.exec(s.sub||"");return (code?code[0]+" ":"")+s.title}
 function areaProgress(k){
   const p=sumProgress(state.sessions.filter(s=>s.room===k)),r=roomOf(k),v=state.leads[k];
-  for(const j of jobsInRoom(k)){p.need++;if(names(j.people).length)p.done++}
-  if(r.lead&&!isNA(v)){p.need++;if(names(v).length)p.done++}
+  for(const j of jobsInRoom(k)){const n=jobNeed(j);p.need+=n;p.done+=Math.min(n,names(j.people).length)}
+  if(r.lead&&!isNA(v)){const n=leadNeed(k);p.need+=n;p.done+=Math.min(n,names(v).length)}
   return p;
 }
 function leadTasks(k){
@@ -654,18 +701,25 @@ function clashes(kind,key,list){
   }
   return out;
 }
-function chipsHtml(kind,key,sub,label){
+function needTag(have,need){
+  if(need<=1&&have<=1)return "";
+  return '<span class="need'+(have<need?" short":have>need?" over":"")+'" title="已指派 '+have+" 人，需求 "+need+' 人">'+have+"/"+need+"</span>";
+}
+function chipsHtml(kind,key,sub,label,need){
   const v=chipGet(kind,key,sub),list=names(v),na=isNA(v),clash=clashes(kind,key,list),badSet=new Set(clash.map(c=>c.n));
   if(!mode.canEdit&&kind!=="draft"){
-    if(list.length)return '<span class="names">'+esc(list.join("、"))+"</span>";
-    return na?'<span class="none na">不需要</span>':'<span class="none">未指派</span>';
+    const tag=need?needTag(list.length,need):"";
+    if(list.length)return '<span class="names">'+esc(list.join("、"))+"</span>"+tag;
+    return na?'<span class="none na">不需要</span>':'<span class="none">未指派</span>'+tag;
   }
   const empty=!list.length&&!na;
-  let h='<div class="chips'+(empty?" empty":"")+'" data-chips data-kind="'+esc(kind)+'" data-key="'+esc(key)+'" data-sub="'+esc(sub||"")+'">';
+  const gap=need?need-list.length:0;
+  let h='<div class="chips'+(empty?" empty":gap>0?" short":"")+'" data-chips data-kind="'+esc(kind)+'" data-key="'+esc(key)+'" data-sub="'+esc(sub||"")+'">';
   if(na)h+='<span class="chip na">不需要<button type="button" class="chip-x" data-clear="1" aria-label="取消不需要">'+ICON.x+"</button></span>";
   h+=list.map(n=>'<span class="chip'+(badSet.has(n)?" bad":"")+'">'+esc(n)+'<button type="button" class="chip-x" data-remove="'+esc(n)+'" aria-label="移除 '+esc(n)+'">'+ICON.x+"</button></span>").join("");
-  if(!na)h+='<input id="'+esc(chipId(kind,key,sub))+'" class="chip-input" list="peopleList" autocomplete="off" aria-label="'+esc((label||"負責人")+" 新增姓名")+'" placeholder="'+(list.length?"新增":(kind==="draft"?"輸入姓名，按 Enter":"未指派"))+'">';
+  if(!na)h+='<input id="'+esc(chipId(kind,key,sub))+'" class="chip-input" list="peopleList" autocomplete="off" aria-label="'+esc((label||"負責人")+" 新增姓名")+'" placeholder="'+(list.length?(gap>0?"還缺 "+gap+" 人":"新增"):(kind==="draft"?"輸入姓名，按 Enter":"未指派"))+'">';
   if(empty&&kind!=="draft"&&kind!=="job")h+='<button type="button" class="chip-na" data-naset="1">不需要</button>';
+  if(need&&!na)h+=needTag(list.length,need);
   h+="</div>";
   if(clash.length)h+='<p class="clash">'+clash.map(c=>esc(c.n)+" 與 "+esc(c.hits.slice(0,2).join("、"))+(c.hits.length>2?" 等 "+c.hits.length+" 項":"")+" 重疊").join("；")+"</p>";
   return h;
@@ -678,7 +732,7 @@ function statusHtml(kind,key,val,hasPeople){
 }
 function renderTabs(){
   const ready=mode.loadState==="ready";
-  const open=ready?state.jobs.filter(j=>!names(j.people).length).length:0,bad=ready&&mode.canEdit?CTX.bad.size:0;
+  const open=ready?state.jobs.filter(jobShort).length:0,bad=ready&&mode.canEdit?CTX.bad.size:0;
   const inRoom=ui.view==="room"&&ROOMS.some(r=>r.k===ui.room);
   const cur=inRoom?"room":["jobs","people","notes"].includes(ui.view)?ui.view:"overview";
   const count=(n,cls)=>n?'<span class="counter'+(cls?" "+cls:"")+'">'+n+"</span>":"";
@@ -704,42 +758,57 @@ function banners(){
 function timeRange(i){return i.start||i.end?esc(i.start)+"–"+esc(i.end):""}
 function jobWhere(i){const r=roomOf(i.room);return r.name+(i.link?" · "+linkLabel(i.link):"")}
 function editBtn(attr,id){return mode.canEdit?'<button type="button" class="ghost row-act" '+attr+'="'+esc(id)+'">編輯</button>':""}
-function jobTr(j,withDay,cls){
+function selBox(id,group,label){
+  return mode.canEdit?'<td class="c-check"><input type="checkbox" class="sel-row" id="sel-'+esc(id)+'" value="'+esc(id)+'" data-group="'+esc(group)+'" aria-label="選取 '+esc(label)+'"'+(ui.sel.has(id)?" checked":"")+"></td>":"";
+}
+function selHead(){return mode.canEdit?'<th class="c-check"><input type="checkbox" class="sel-all" id="sel-all" aria-label="全選"></th>':""}
+function groupRow(group,text,n,cols){
+  if(!mode.canEdit)return '<tr class="group"><th colspan="'+cols+'">'+esc(text)+"<span>"+n+"</span></th></tr>";
+  return '<tr class="group"><th colspan="'+cols+'"><label><input type="checkbox" class="sel-group" id="selg-'+esc(group)+'" data-group="'+esc(group)+'" aria-label="選取 '+esc(text)+' 全部">'+esc(text)+"<span>"+n+"</span></label></th></tr>";
+}
+function batchBar(text,buttons){
+  if(!mode.canEdit||!ui.sel.size)return "";
+  return '<div class="batchbar" id="batchbar" role="region" aria-label="批次操作"><span class="batch-count">'+esc(text)+"</span>"+buttons+'<span class="batch-sep"></span><button type="button" data-batch="clear">取消選取</button></div>';
+}
+function jobTr(j,group){
   const i=jobInfo(j),has=names(j.people).length>0;
-  return '<tr'+(cls?' class="'+cls+'"':"")+'><td class="c-time">'+(withDay?"<small>"+esc(dayOf(i.day).short)+"</small>":"")+timeRange(i)+"</td>"
+  return '<tr'+(ui.sel.has(j.id)?' class="selected"':"")+">"+selBox(j.id,group,j.title)
+    +'<td class="c-time">'+timeRange(i)+"</td>"
     +'<td class="c-title"><b>'+esc(j.title)+"</b>"+(j.note?'<small class="note">'+esc(j.note)+"</small>":"")+"</td>"
     +'<td class="c-meta">'+esc(jobWhere(i))+"</td>"
-    +'<td class="c-people">'+chipsHtml("job",j.id,"",j.title)+"</td>"
+    +'<td class="c-people">'+chipsHtml("job",j.id,"",j.title,jobNeed(j))+"</td>"
     +'<td class="c-status">'+statusHtml("job",j.id,j.status,has)+"</td>"
     +'<td class="c-act">'+editBtn("data-editjob",j.id)+"</td></tr>";
 }
 function renderJobs(){
-  const isOpen=j=>!names(j.people).length;
   const isClash=j=>names(j.people).some(n=>CTX.bad.has(n)&&CTX.bad.get(n).has("job-"+j.id));
-  const clashN=mode.canEdit?state.jobs.filter(isClash).length:0,openN=state.jobs.filter(isOpen).length;
+  const clashN=mode.canEdit?state.jobs.filter(isClash).length:0,openN=state.jobs.filter(jobShort).length;
   if(ui.jobFilter==="clash"&&!clashN)ui.jobFilter="all";
   if(ui.jobFilter==="open"&&!openN)ui.jobFilter="all";
   const areas=ROOMS.filter(r=>jobsInRoom(r.k).length);
   if(ui.jobArea&&!areas.some(r=>r.k===ui.jobArea))ui.jobArea="";
-  const pass=j=>(ui.jobFilter==="all"||(ui.jobFilter==="open"&&isOpen(j))||(ui.jobFilter==="clash"&&isClash(j)))&&(!ui.jobArea||jobInfo(j).room===ui.jobArea);
+  const pass=j=>(ui.jobFilter==="all"||(ui.jobFilter==="open"&&jobShort(j))||(ui.jobFilter==="clash"&&isClash(j)))&&(!ui.jobArea||jobInfo(j).room===ui.jobArea);
   let h=banners()+'<div class="page-head"><h2>工作</h2><span class="spacer"></span>'+(mode.canEdit?'<button type="button" class="primary" data-addjob="1">新增工作</button>':"")+"</div>";
   if(!state.jobs.length){
-    h+='<section class="blank"><p>'+(mode.canEdit?"還沒有工作。新增時選好對應的議程場次，時間和地點會自動帶入。":"目前還沒有工作。")+"</p></section>";
+    h+='<section class="blank"><p>'+(mode.canEdit?"還沒有工作。可以按「新增工作」，或到區域頁勾選多個場次一次新增。":"目前還沒有工作。")+"</p></section>";
     $("main").innerHTML=h;return;
   }
   const seg=(k,label,n)=>'<button type="button" data-jobfilter="'+k+'" class="'+(ui.jobFilter===k?"on":"")+'">'+label+' <span class="counter">'+n+"</span></button>";
-  h+='<div class="toolbar"><div class="subtabs" role="group" aria-label="篩選工作">'+seg("all","全部",state.jobs.length)+(openN?seg("open","未指派",openN):"")+(clashN?seg("clash","時段重疊",clashN):"")+"</div>";
+  h+='<div class="toolbar"><div class="subtabs" role="group" aria-label="篩選工作">'+seg("all","全部",state.jobs.length)+(openN?seg("open","缺人",openN):"")+(clashN?seg("clash","時段重疊",clashN):"")+"</div>";
   if(areas.length>1)h+='<label class="inline-select">區域<select id="jobArea"><option value="">全部</option>'+areas.map(r=>'<option value="'+esc(r.k)+'"'+(ui.jobArea===r.k?" selected":"")+">"+esc(r.name)+"</option>").join("")+"</select></label>";
-  h+='</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>時間</th><th>工作</th><th>區域與場次</th><th>負責人</th><th>通知</th><th></th></tr></thead>';
+  const cols=mode.canEdit?7:6;
+  h+='</div><div class="tbl-wrap"><table class="tbl"><thead><tr>'+selHead()+"<th>時間</th><th>工作</th><th>區域與場次</th><th>負責人</th><th>通知</th><th></th></tr></thead>";
   let shown=0;
   for(const d of DAYS){
     const rows=state.jobs.filter(j=>pass(j)&&jobInfo(j).day===d.k).sort((a,b)=>{const x=jobInfo(a),y=jobInfo(b);return byTime(x,y)||ROOMS.findIndex(r=>r.k===x.room)-ROOMS.findIndex(r=>r.k===y.room)});
     if(!rows.length)continue;
     shown+=rows.length;
-    h+='<tbody><tr class="group"><th colspan="6">'+esc(d.name)+"<span>"+rows.length+"</span></th></tr>"+rows.map(j=>jobTr(j)).join("")+"</tbody>";
+    h+="<tbody>"+groupRow(d.k,d.name,rows.length,cols)+rows.map(j=>jobTr(j,d.k)).join("")+"</tbody>";
   }
-  if(!shown)h+='<tbody><tr><td colspan="6" class="muted">沒有符合條件的工作。</td></tr></tbody>';
-  $("main").innerHTML=h+"</table></div>";
+  if(!shown)h+='<tbody><tr><td colspan="'+cols+'" class="muted">沒有符合條件的工作。</td></tr></tbody>';
+  h+="</table></div>";
+  h+=batchBar("已選 "+ui.sel.size+" 項工作",'<button type="button" data-batch="edit">批次編輯</button><button type="button" data-batch="delete">刪除</button>');
+  $("main").innerHTML=h;
 }
 function renderNotes(){
   let h=banners()+'<div class="page-head"><h2>備註</h2></div>';
@@ -751,82 +820,84 @@ function renderNotes(){
 }
 function renderRoom(){
   const room=roomOf(ui.room),roles=state.roles[room.k]||[],list=state.sessions.filter(s=>s.room===room.k),one=roles.length===1?roles[0]:null;
+  const cols=mode.canEdit?6:5,blankCheck=mode.canEdit?'<td class="c-check"></td>':"";
   let h=banners()+'<div class="page-head"><div><h2>'+esc(room.name)+'</h2><p class="page-sub">'+esc(room.place)+'</p></div><span class="spacer"></span>';
   if(mode.canEdit)h+='<details class="menu"><summary>更多</summary><div class="menu-list"><button type="button" data-editarea="'+esc(room.k)+'">編輯區域</button><button type="button" id="editRoles">場次職務欄位</button></div></details>'
     +'<button type="button" class="primary" data-addjob="1" data-job-room="'+esc(room.k)+'">新增工作</button>';
   h+="</div>";
   if(room.lead){
     const has=names(state.leads[room.k]).length>0;
-    h+='<dl class="props"><dt>負責人</dt><dd><div>'+chipsHtml("lead",room.k,"",room.name+" 負責人")+"</div>"+statusHtml("lead",room.k,state.leadStatus[room.k],has)+"</dd></dl>";
+    h+='<dl class="props"><dt>負責人</dt><dd><div>'+chipsHtml("lead",room.k,"",room.name+" 負責人",leadNeed(room.k))+"</div>"+statusHtml("lead",room.k,state.leadStatus[room.k],has)+"</dd></dl>";
   }
   const free=state.jobs.filter(j=>!j.linkId&&j.room===room.k);
   if(list.length||free.length){
-    h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>時間</th><th>場次與工作</th><th>'+esc(one?one.name:"負責人")+"</th><th>通知</th><th></th></tr></thead>";
+    h+='<div class="tbl-wrap"><table class="tbl"><thead><tr>'+selHead()+"<th>時間</th><th>場次與工作</th><th>"+esc(one?one.name:"負責人")+"</th><th>通知</th><th></th></tr></thead>";
     const subJob=j=>{
       const has=names(j.people).length>0;
-      return '<tr class="sub"><td class="c-time"></td><td class="c-title"><b>'+esc(j.title)+"</b>"+(j.note?'<small class="note">'+esc(j.note)+"</small>":"")+'</td><td class="c-people">'+chipsHtml("job",j.id,"",j.title)+'</td><td class="c-status">'+statusHtml("job",j.id,j.status,has)+'</td><td class="c-act">'+editBtn("data-editjob",j.id)+"</td></tr>";
+      return '<tr class="sub">'+blankCheck+'<td class="c-time"></td><td class="c-title"><b>'+esc(j.title)+"</b>"+(j.note?'<small class="note">'+esc(j.note)+"</small>":"")+'</td><td class="c-people">'+chipsHtml("job",j.id,"",j.title,jobNeed(j))+'</td><td class="c-status">'+statusHtml("job",j.id,j.status,has)+'</td><td class="c-act">'+editBtn("data-editjob",j.id)+"</td></tr>";
     };
     for(const d of DAYS){
       const rows=list.filter(s=>s.day===d.k).sort(byTime);
       if(!rows.length)continue;
-      h+='<tbody><tr class="group"><th colspan="5">'+esc(d.name)+"<span>"+rows.length+"</span></th></tr>";
+      h+="<tbody>"+groupRow(d.k,d.name,rows.length,cols);
       for(const s of rows){
         const has=roles.some(r=>names(s.assign[r.id]).length);
-        h+='<tr id="row-'+esc(s.id)+'"><td class="c-time">'+timeRange(s)+'</td><td class="c-title"><span class="t-strong">'+esc(s.title)+"</span>"+(s.sub?"<small>"+esc(s.sub)+"</small>":"")+(s.note?'<small class="note">'+esc(s.note)+"</small>":"")+"</td>"
+        h+='<tr id="row-'+esc(s.id)+'"'+(ui.sel.has(s.id)?' class="selected"':"")+">"+selBox(s.id,d.k,s.title)+'<td class="c-time">'+timeRange(s)+'</td><td class="c-title"><span class="t-strong">'+esc(s.title)+"</span>"+(s.sub?"<small>"+esc(s.sub)+"</small>":"")+(s.note?'<small class="note">'+esc(s.note)+"</small>":"")+"</td>"
           +'<td class="c-people">'+(one?chipsHtml("assign",s.id,one.id,s.title+" "+one.name):"")+"</td>"
           +'<td class="c-status">'+(roles.length?statusHtml("session",s.id,s.status,has):"")+"</td>"
           +'<td class="c-act">'+(mode.canEdit?'<button type="button" class="ghost row-act" data-addjob="1" data-link="'+esc(s.id)+'">新增工作</button>'+editBtn("data-edit",s.id):"")+"</td></tr>";
-        if(roles.length>1)for(const r of roles)h+='<tr class="sub"><td class="c-time"></td><td class="c-title"><b>'+esc(r.name)+'</b></td><td class="c-people">'+chipsHtml("assign",s.id,r.id,s.title+" "+r.name)+'</td><td class="c-status"></td><td class="c-act"></td></tr>';
+        if(roles.length>1)for(const r of roles)h+='<tr class="sub">'+blankCheck+'<td class="c-time"></td><td class="c-title"><b>'+esc(r.name)+'</b></td><td class="c-people">'+chipsHtml("assign",s.id,r.id,s.title+" "+r.name)+'</td><td class="c-status"></td><td class="c-act"></td></tr>';
         h+=state.jobs.filter(j=>j.linkId===s.id).map(subJob).join("");
       }
       h+="</tbody>";
     }
     if(free.length){
-      h+='<tbody><tr class="group"><th colspan="5">其他工作<span>'+free.length+"</span></th></tr>";
+      h+='<tbody><tr class="group"><th colspan="'+cols+'">其他工作<span>'+free.length+"</span></th></tr>";
       h+=free.map(j=>{
         const i=jobInfo(j),has=names(j.people).length>0;
-        return '<tr><td class="c-time"><small>'+esc(dayOf(i.day).short)+"</small>"+timeRange(i)+'</td><td class="c-title"><b>'+esc(j.title)+"</b>"+(j.note?'<small class="note">'+esc(j.note)+"</small>":"")+'</td><td class="c-people">'+chipsHtml("job",j.id,"",j.title)+'</td><td class="c-status">'+statusHtml("job",j.id,j.status,has)+'</td><td class="c-act">'+editBtn("data-editjob",j.id)+"</td></tr>";
+        return "<tr>"+blankCheck+'<td class="c-time"><small>'+esc(dayOf(i.day).short)+"</small>"+timeRange(i)+'</td><td class="c-title"><b>'+esc(j.title)+"</b>"+(j.note?'<small class="note">'+esc(j.note)+"</small>":"")+'</td><td class="c-people">'+chipsHtml("job",j.id,"",j.title,jobNeed(j))+'</td><td class="c-status">'+statusHtml("job",j.id,j.status,has)+'</td><td class="c-act">'+editBtn("data-editjob",j.id)+"</td></tr>";
       }).join("")+"</tbody>";
     }
     h+="</table></div>";
   }else h+='<section class="blank"><p>這個區域還沒有工作。</p></section>';
+  const assignBtn=roles.length?'<button type="button" data-batch="assign">指派'+esc(one?one.name:"職務")+"</button>":"";
+  h+=batchBar("已選 "+ui.sel.size+" 個場次",'<button type="button" data-batch="addjob">新增工作</button>'+assignBtn);
   $("main").innerHTML=h;
 }
 function areaTr(r){
-  const sessN=state.sessions.filter(s=>s.room===r.k).length,js=jobsInRoom(r.k),openJ=js.filter(j=>!names(j.people).length).length;
+  const sessN=state.sessions.filter(s=>s.room===r.k).length,js=jobsInRoom(r.k),openJ=js.filter(jobShort).length;
   const name='<td class="c-title"><button type="button" class="link" data-open-room="'+esc(r.k)+'">'+esc(r.name)+"</button></td>";
   const place='<td class="c-meta">'+esc(r.place)+"</td>";
-  const nums='<td class="c-num">'+sessN+'</td><td class="c-num">'+js.length+(openJ?' <span class="warn">('+openJ+" 未指派)</span>":"")+"</td>";
+  const nums='<td class="c-num">'+sessN+'</td><td class="c-num">'+js.length+(openJ?' <span class="warn">('+openJ+" 缺人)</span>":"")+"</td>";
   if(r.lead){
     const has=names(state.leads[r.k]).length>0;
-    return "<tr>"+name+place+'<td class="c-people">'+chipsHtml("lead",r.k,"",r.name+" 負責人")+"</td>"+nums+'<td class="c-status">'+statusHtml("lead",r.k,state.leadStatus[r.k],has)+"</td></tr>";
+    return "<tr>"+name+place+'<td class="c-people">'+chipsHtml("lead",r.k,"",r.name+" 負責人",leadNeed(r.k))+"</td>"+nums+'<td class="c-status">'+statusHtml("lead",r.k,state.leadStatus[r.k],has)+"</td></tr>";
   }
   const q=sumProgress(state.sessions.filter(s=>s.room===r.k));
   return "<tr>"+name+place+'<td class="c-people"><button type="button" class="link" style="font-weight:400" data-open-room="'+esc(r.k)+'">隨車已指派 '+q.done+" / "+q.need+" 班</button></td>"+nums+'<td class="c-status"></td></tr>';
 }
 function areaIsOpen(r){
-  if(r.lead&&!isNA(state.leads[r.k])&&!names(state.leads[r.k]).length)return true;
   const p=areaProgress(r.k);return p.done<p.need;
 }
 function renderOverview(){
   const tp=ROOMS.reduce((a,r)=>{const p=areaProgress(r.k);a.need+=p.need;a.done+=p.done;return a},{need:0,done:0});
-  const openAreas=ROOMS.filter(r=>r.lead&&!isNA(state.leads[r.k])&&!names(state.leads[r.k]).length).length;
-  const openJobs=state.jobs.filter(j=>!names(j.people).length).length;
+  const openAreas=ROOMS.filter(leadShort).length;
+  const openJobs=state.jobs.filter(jobShort).length;
   const seats=(q=>q.need-q.done)(sumProgress(state.sessions.filter(s=>s.room==="bus")));
   const others=ROOMS.filter(r=>r.k!=="bus").map(r=>({r,gap:(q=>q.need-q.done)(sumProgress(state.sessions.filter(s=>s.room===r.k)))})).filter(x=>x.gap>0);
   const bad=mode.canEdit?CTX.bad.size:0;
   const stat=(label,val,attrs,cls)=>'<button type="button" class="stat'+(val&&cls?" "+cls:"")+'" '+attrs+(val?"":" disabled")+'><span class="stat-label">'+esc(label)+'</span><span class="stat-value">'+val+"</span></button>";
   let h=banners()+'<div class="page-head"><h2>各區負責人</h2><span class="spacer"></span>'+(mode.canEdit?'<button type="button" data-addarea="1">新增區域</button>':"")+"</div>";
   h+='<div class="stats"><div class="stat" style="cursor:default"><span class="stat-label">已指派</span><span class="stat-value">'+tp.done+" <small>/ "+tp.need+"</small></span></div>"
-    +stat("區域未指派",openAreas,'data-stat="areas"',"warn")
-    +stat("隨車未指派",seats,'data-stat="bus"',"warn")
-    +stat("工作未指派",openJobs,'data-stat="jobs"',"warn")
-    +others.map(x=>stat(x.r.name+"未指派",x.gap,'data-stat="room" data-stat-room="'+esc(x.r.k)+'"',"warn")).join("")
+    +stat("區域缺人",openAreas,'data-stat="areas"',"warn")
+    +stat("隨車缺人",seats,'data-stat="bus"',"warn")
+    +stat("工作缺人",openJobs,'data-stat="jobs"',"warn")
+    +others.map(x=>stat(x.r.name+"缺人",x.gap,'data-stat="room" data-stat-room="'+esc(x.r.k)+'"',"warn")).join("")
     +(mode.canEdit?stat("時段重疊",bad,'data-stat="people"',"bad"):"")+"</div>";
   const openN=ROOMS.filter(areaIsOpen).length;
   if(ui.areaFilter==="open"&&!openN)ui.areaFilter="all";
   const f=(k,l,n)=>'<button type="button" data-areafilter="'+k+'" class="'+(ui.areaFilter===k?"on":"")+'">'+l+' <span class="counter">'+n+"</span></button>";
-  h+='<div class="toolbar"><div class="subtabs" role="group" aria-label="篩選區域">'+f("all","全部",ROOMS.length)+(openN?f("open","未指派完",openN):"")+"</div></div>";
+  h+='<div class="toolbar"><div class="subtabs" role="group" aria-label="篩選區域">'+f("all","全部",ROOMS.length)+(openN?f("open","缺人",openN):"")+"</div></div>";
   const hall=["main","A","B","C","D","P"],pass=r=>ui.areaFilter==="all"||areaIsOpen(r);
   const group=(title,rows)=>rows.length?'<tbody><tr class="group"><th colspan="6">'+esc(title)+"<span>"+rows.length+"</span></th></tr>"+rows.map(areaTr).join("")+"</tbody>":"";
   h+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>區域</th><th>地點</th><th>負責人</th><th class="c-num">場次</th><th class="c-num">工作</th><th>通知</th></tr></thead>'
@@ -934,10 +1005,27 @@ function syncRooms(){
   ROOMS.length=0;ROOMS.push(...base.slice(0,i),...custom,...base.slice(i));
   ROOMS.forEach(r=>{if(!Array.isArray(state.roles[r.k]))state.roles[r.k]=[]});
 }
-let rendering=false,toastTimer;
-function toast(msg){
+let rendering=false,toastTimer,lastSelIdx=null,draftWrap="jPeopleWrap",jobBatchLinks=[];
+function toast(msg,opts){
   const t=$("toast");t.textContent=msg;t.hidden=false;
-  clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true},3600);
+  if(opts&&opts.undo){
+    const u=document.createElement("button");
+    u.type="button";u.className="toast-undo";u.textContent="復原";
+    u.addEventListener("click",()=>{t.hidden=true;opts.undo()});
+    t.append(u);
+  }
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true},opts&&opts.undo?10000:3600);
+}
+function syncSel(){
+  const rows=[...document.querySelectorAll("input.sel-row")];
+  rows.forEach(x=>{const tr=x.closest("tr");if(tr)tr.classList.add("selectable")});
+  document.querySelectorAll("input.sel-group").forEach(g=>{
+    const r=rows.filter(x=>x.dataset.group===g.dataset.group),c=r.filter(x=>x.checked).length;
+    g.checked=!!r.length&&c===r.length;g.indeterminate=c>0&&c<r.length;
+  });
+  const all=$("sel-all");
+  if(all){const c=rows.filter(x=>x.checked).length;all.checked=!!rows.length&&c===rows.length;all.indeterminate=c>0&&c<rows.length}
+  document.body.classList.toggle("has-batch",!!$("batchbar"));
 }
 function renderLoading(){
   const row='<div class="sk-row"><span class="sk"></span><span class="sk"></span><span class="sk"></span><span class="sk"></span></div>';
@@ -948,6 +1036,8 @@ function renderLoadError(){
 }
 function render(){
   syncRooms();
+  const scope=(mode.canEdit?"e:":"v:")+(ui.view==="jobs"?"jobs":ui.view==="room"?"room:"+ui.room:ui.view);
+  if(scope!==ui.selScope){ui.sel.clear();ui.selScope=scope;lastSelIdx=null}
   const map=allTasks();CTX={tasks:map,bad:conflictInfo(map)};
   $("menu").hidden=mode.loadState!=="ready";
   if(mode.loadState!=="ready"){
@@ -966,6 +1056,7 @@ function render(){
     else renderOverview();
   }finally{rendering=false}
   applyMode();
+  syncSel();
   $("peopleList").innerHTML=[...map.keys()].sort((a,b)=>a.localeCompare(b,"zh-Hant")).map(n=>'<option value="'+esc(n)+'">').join("");
   if(ui.message){if(!ui.msgErr)toast(ui.message);ui.message=null}
 }
@@ -1002,7 +1093,7 @@ function afterPointer(fn){if(pointerDown)pendingAfter=fn;else fn()}
 const SPLIT=/[,，、;；\/／\n]+/;
 function renderDraft(){
   const had=document.activeElement&&document.activeElement.id==="chip-draft-job";
-  $("jPeopleWrap").innerHTML=chipsHtml("draft","job","","負責人");
+  $(draftWrap).innerHTML=chipsHtml("draft","job","","負責人");
   if(had){const el=$("chip-draft-job");if(el)el.focus()}
 }
 function chipChanged(kind){
@@ -1079,7 +1170,7 @@ $("main").addEventListener("input",e=>{
 });
 $("main").addEventListener("change",e=>{
   const el=e.target;
-  if(el.id==="jobArea"){ui.jobArea=el.value;refresh();return}
+  if(el.id==="jobArea"){ui.jobArea=el.value;ui.sel.clear();refresh();return}
   if(el.dataset.stkind){
     const k=el.dataset.stkind,key=el.dataset.stkey,v=el.value;
     if(k==="lead")state.leadStatus[key]=v;
@@ -1100,15 +1191,34 @@ $("main").addEventListener("toggle",e=>{
   if(e.target.open)ui.openPeople.add(p);else ui.openPeople.delete(p);
 },true);
 $("main").addEventListener("click",e=>{
+  const c=e.target;
+  if(!c.matches||!c.matches("input[type=checkbox]"))return;
+  const rows=[...document.querySelectorAll("input.sel-row")],apply=list=>list.forEach(x=>{if(c.checked)ui.sel.add(x.value);else ui.sel.delete(x.value)});
+  if(c.classList.contains("sel-row")){
+    const i=rows.indexOf(c);
+    if(e.shiftKey&&lastSelIdx!==null)apply(rows.slice(Math.min(i,lastSelIdx),Math.max(i,lastSelIdx)+1));
+    else apply([c]);
+    lastSelIdx=i;
+  }else if(c.classList.contains("sel-group"))apply(rows.filter(x=>x.dataset.group===c.dataset.group));
+  else if(c.classList.contains("sel-all"))apply(rows);
+  else return;
+  refresh();
+});
+$("main").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b||b.closest("[data-chips]"))return;
   const d=b.dataset;
+  if(d.batch==="clear"){ui.sel.clear();refresh();return}
+  if(d.batch==="delete"){batchDelete();return}
+  if(d.batch==="edit"){openBatch("jobs");return}
+  if(d.batch==="assign"){openBatch("session");return}
+  if(d.batch==="addjob"){openJob(null,{links:sortedSessions(state.sessions.filter(s=>ui.sel.has(s.id))).map(s=>s.id)});return}
   if(d.openRoom){go("room",d.openRoom);return}
-  if(d.jobfilter){ui.jobFilter=d.jobfilter;refresh();return}
+  if(d.jobfilter){ui.jobFilter=d.jobfilter;ui.sel.clear();refresh();return}
   if(d.areafilter){ui.areaFilter=d.areafilter;refresh();return}
   if(d.stat==="areas"){ui.areaFilter="open";refresh();return}
   if(d.stat==="bus"){go("room","bus");return}
   if(d.stat==="room"){go("room",d.statRoom);return}
-  if(d.stat==="jobs"){ui.jobFilter="open";ui.jobArea="";go("jobs");return}
+  if(d.stat==="jobs"){ui.jobFilter="open";ui.jobArea="";ui.sel.clear();go("jobs");return}
   if(d.stat==="people"){go("people");return}
   if(d.retry){mode.loadState="loading";render();loadHosted();return}
   if(d.restore){restoreReplaced();return}
@@ -1193,23 +1303,35 @@ function fillLinkOptions(){
   }
   $("jLink").innerHTML=h;
 }
+function parseNeed(v){const n=parseInt(v,10);return n>=1?Math.min(n,99):1}
 function toggleJobCustom(){
-  const custom=!$("jLink").value;
+  const batch=jobBatchLinks.length>0,custom=!batch&&!$("jLink").value;
+  $("jLinkWrap").hidden=batch;
   ["jRoomWrap","jDayWrap","jStartWrap","jEndWrap"].forEach(id=>{$(id).hidden=!custom});
-  const s=state.sessions.find(x=>x.id===$("jLink").value),info=$("jLinkInfo");
+  const info=$("jLinkInfo");
+  if(batch){
+    const list=jobBatchLinks.map(id=>state.sessions.find(x=>x.id===id)).filter(Boolean);
+    info.hidden=false;
+    info.textContent="將新增到 "+list.length+" 個場次："+list.slice(0,3).map(s=>dayOf(s.day).short+" "+s.start+" "+s.title).join("、")+(list.length>3?" 等":"");
+    return;
+  }
+  const s=state.sessions.find(x=>x.id===$("jLink").value);
   info.hidden=!s;
   if(s){const r=roomOf(s.room);info.textContent="時間與地點跟隨場次："+dayOf(s.day).short+" "+s.start+"–"+s.end+" · "+r.name+(r.noPlace?"":"（"+r.place+"）")}
 }
 function openJob(id,opts){
   opts=opts||{};editingJob=id;fillRoomSelects();fillLinkOptions();
+  jobBatchLinks=opts.links||[];
   const j=id?state.jobs.find(x=>x.id===id):null;
-  $("dlgJobTitle").textContent=j?"編輯工作":"新增工作";
+  $("dlgJobTitle").textContent=j?"編輯工作":jobBatchLinks.length?"新增工作到 "+jobBatchLinks.length+" 個場次":"新增工作";
   $("jTitle").value=j?j.title:"";
   $("jLink").value=j?(j.linkId||""):(opts.link||"");
   $("jRoom").value=(j&&j.room)||opts.room||"main";
   $("jDay").value=(j&&j.day)||"d1";
   $("jStart").value=(j&&j.start)||"08:00";
   $("jEnd").value=(j&&j.end)||"09:00";
+  $("jNeed").value=j?jobNeed(j):1;
+  draftWrap="jPeopleWrap";$("bPeopleWrap").innerHTML="";
   jobDraft=j?j.people:"";renderDraft();
   $("jNote").value=j?j.note:"";
   $("jErr").hidden=true;$("jDelete").hidden=!j;
@@ -1224,14 +1346,81 @@ $("jDelete").addEventListener("click",()=>{
 });
 $("formJob").addEventListener("submit",e=>{
   const typed=$("chip-draft-job");if(typed)commitChip(typed);
-  const title=$("jTitle").value.trim(),linkId=$("jLink").value||null,err=m=>{e.preventDefault();$("jErr").hidden=false;$("jErr").textContent=m};
+  const title=$("jTitle").value.trim(),linkId=$("jLink").value||null,need=parseNeed($("jNeed").value),note=$("jNote").value.trim(),err=m=>{e.preventDefault();$("jErr").hidden=false;$("jErr").textContent=m};
   if(!title)return err("請填寫工作名稱。");
+  if(jobBatchLinks.length){
+    const before=JSON.stringify(state);let added=0,skipped=0;
+    for(const sid of jobBatchLinks){
+      if(state.jobs.some(j=>j.linkId===sid&&j.title===title)){skipped++;continue}
+      state.jobs.push({id:"j"+(state.nextId++),status:STATUS[0],title,linkId:sid,people:jobDraft,need,note,room:null,day:null,start:null,end:null});
+      added++;
+    }
+    jobBatchLinks=[];ui.sel.clear();save();refresh();
+    toast("已新增 "+added+" 項工作"+(skipped?"，略過 "+skipped+" 項已存在的工作":"")+"。",added?undoFrom(before):null);
+    return;
+  }
   if(!linkId&&(!$("jStart").value||!$("jEnd").value||$("jEnd").value<=$("jStart").value))return err("結束時間要晚於開始時間。");
   let j=editingJob?state.jobs.find(x=>x.id===editingJob):null;
   if(!j){j={id:"j"+(state.nextId++),status:STATUS[0]};state.jobs.push(j)}
-  Object.assign(j,{title,linkId,people:jobDraft,note:$("jNote").value.trim(),room:linkId?null:$("jRoom").value,day:linkId?null:$("jDay").value,start:linkId?null:$("jStart").value,end:linkId?null:$("jEnd").value});
-  save();render();
+  Object.assign(j,{title,linkId,people:jobDraft,need,note,room:linkId?null:$("jRoom").value,day:linkId?null:$("jDay").value,start:linkId?null:$("jStart").value,end:linkId?null:$("jEnd").value});
+  save();refresh();
 });
+
+// 批次編輯
+let batchKind=null;
+function undoFrom(snapshot){
+  return {undo:()=>{
+    const at=state.updatedAt,s=normalize(JSON.parse(snapshot));s.updatedAt=at;state=s;
+    save();refresh();toast("已復原。");
+  }};
+}
+function openBatch(kind){
+  batchKind=kind;
+  const n=ui.sel.size,room=roomOf(ui.room),roles=state.roles[room.k]||[];
+  $("bTitle").textContent=kind==="jobs"?"批次編輯 "+n+" 項工作":"指派 "+n+" 個場次";
+  $("bRoleWrap").hidden=kind==="jobs"||roles.length<2;
+  $("bRole").innerHTML=roles.map(r=>'<option value="'+esc(r.id)+'">'+esc(r.name)+"</option>").join("");
+  $("bNeedWrap").hidden=kind!=="jobs";
+  $("bNeed").value="";$("bMode").value="add";$("bStatus").value="";
+  draftWrap="bPeopleWrap";$("jPeopleWrap").innerHTML="";
+  jobDraft="";renderDraft();
+  $("bErr").hidden=true;
+  $("dlgBatch").showModal();
+}
+$("bCancel").addEventListener("click",()=>$("dlgBatch").close());
+$("formBatch").addEventListener("submit",e=>{
+  const typed=$("chip-draft-job");if(typed)commitChip(typed);
+  const who=names(jobDraft),mode2=$("bMode").value,status=$("bStatus").value,needRaw=$("bNeed").value;
+  const hasPeople=who.length>0||mode2==="set",hasNeed=batchKind==="jobs"&&needRaw!=="";
+  if(!hasPeople&&!status&&!hasNeed){e.preventDefault();$("bErr").hidden=false;$("bErr").textContent="請至少填寫人員、需求人數或通知狀態其中一項。";return}
+  const before=JSON.stringify(state),merge=cur=>mode2==="set"?who.join("、"):[...new Set([...names(cur),...who])].join("、");
+  let n=0;
+  if(batchKind==="jobs"){
+    for(const j of state.jobs){
+      if(!ui.sel.has(j.id))continue;
+      if(hasPeople)j.people=merge(j.people);
+      if(hasNeed)j.need=parseNeed(needRaw);
+      if(status)j.status=status;
+      n++;
+    }
+  }else{
+    const roles=state.roles[ui.room]||[],role=roles.length>1?$("bRole").value:(roles[0]&&roles[0].id);
+    for(const s of state.sessions){
+      if(!ui.sel.has(s.id))continue;
+      if(hasPeople&&role)s.assign[role]=merge(s.assign[role]);
+      if(status)s.status=status;
+      n++;
+    }
+  }
+  ui.sel.clear();jobDraft="";save();refresh();
+  toast("已更新 "+n+" 項。",undoFrom(before));
+});
+function batchDelete(){
+  const before=JSON.stringify(state),n=ui.sel.size;
+  state.jobs=state.jobs.filter(j=>!ui.sel.has(j.id));
+  ui.sel.clear();save();refresh();
+  toast("已刪除 "+n+" 項工作。",undoFrom(before));
+}
 
 // 區域編輯視窗
 let editingArea=null;
@@ -1241,6 +1430,8 @@ function openArea(k){
   $("dlgAreaTitle").textContent=r?"編輯區域":"新增區域";
   $("aName").value=r?r.name:"";
   $("aPlace").value=r&&!r.noPlace?r.place:"";
+  $("aNeedWrap").hidden=!!r&&!r.lead;
+  $("aNeed").value=k?leadNeed(k):1;
   $("aErr").hidden=true;
   $("aDelete").hidden=!(r&&r.custom);
   $("dlgArea").showModal();
@@ -1252,19 +1443,22 @@ $("aDelete").addEventListener("click",()=>{
   if(used){$("aErr").hidden=false;$("aErr").textContent="這個區域還有 "+used+" 項工作，請先刪除或改到其他區域。";return}
   if(!window.confirm("確定刪除區域「"+r.name+"」？這裡填的負責人也會移除。"))return;
   state.areas=state.areas.filter(a=>a.k!==k);
-  delete state.leads[k];delete state.leadStatus[k];delete state.roles[k];
+  delete state.leads[k];delete state.leadStatus[k];delete state.leadNeeds[k];delete state.roles[k];
   $("dlgArea").close();save();go("overview");
 });
 $("formArea").addEventListener("submit",e=>{
   const name=$("aName").value.trim(),place=$("aPlace").value.trim(),err=m=>{e.preventDefault();$("aErr").hidden=false;$("aErr").textContent=m};
   if(!name)return err("請填寫區域名稱。");
   if(ROOMS.some(r=>r.name===name&&r.k!==editingArea))return err("已經有叫「"+name+"」的區域了。");
+  const need=parseNeed($("aNeed").value);
   if(!editingArea){
     const k="a"+(state.nextId++);
     state.areas.push({k,name,place});state.leads[k]="";
+    if(need>1)state.leadNeeds[k]=need;
   }else{
     const a=state.areas.find(x=>x.k===editingArea);
     if(a){a.name=name;a.place=place}else state.areaOverrides[editingArea]={name,place};
+    if(roomOf(editingArea).lead){if(need>1)state.leadNeeds[editingArea]=need;else delete state.leadNeeds[editingArea]}
   }
   save();render();
 });
@@ -1312,7 +1506,7 @@ function jobsSorted(){
   return [...state.jobs].sort((a,b)=>{const x=jobInfo(a),y=jobInfo(b);return DAYS.findIndex(d=>d.k===x.day)-DAYS.findIndex(d=>d.k===y.day)||byTime(x,y)});
 }
 function jobRows(){
-  return [["日期","開始","結束","區域","工作","對應議程","負責人","狀態","備註"],...jobsSorted().map(j=>{const i=jobInfo(j);return [dayOf(i.day).short,i.start,i.end,roomOf(i.room).name,j.title,i.link?linkLabel(i.link):"",j.people.trim(),j.status,j.note]})];
+  return [["日期","開始","結束","區域","工作","對應議程","負責人","需求人數","已指派人數","狀態","備註"],...jobsSorted().map(j=>{const i=jobInfo(j);return [dayOf(i.day).short,i.start,i.end,roomOf(i.room).name,j.title,i.link?linkLabel(i.link):"",j.people.trim(),jobNeed(j),names(j.people).length,j.status,j.note]})];
 }
 function peopleRows(){
   const rows=[["姓名","組別","聯絡方式","日期","開始","結束","區域","工作","職務／對應場次","時段重疊"]],map=allTasks(),bad=conflictInfo(map);
@@ -1368,7 +1562,7 @@ function sheetXml(rows){
   return x+"</sheetData></worksheet>";
 }
 function buildXlsx(){
-  const leadRows=[["區域","地點","負責人","狀態"],...ROOMS.filter(r=>r.lead).map(r=>[r.name,r.place,(state.leads[r.k]||"").trim(),state.leadStatus[r.k]||STATUS[0]])];
+  const leadRows=[["區域","地點","負責人","需求人數","已指派人數","狀態"],...ROOMS.filter(r=>r.lead).map(r=>[r.name,r.place,(state.leads[r.k]||"").trim(),leadNeed(r.k),names(state.leads[r.k]).length,state.leadStatus[r.k]||STATUS[0]])];
   const sheets=[{name:"負責人總覽",rows:leadRows},{name:"工作",rows:jobRows()},...(state.notes.trim()?[{name:"備註",rows:[["備註"],...state.notes.split("\n").map(x=>[x])]}]:[]),{name:"總表",rows:flatRows()},...ROOMS.map(r=>({name:r.name,rows:roomRows(r)})),{name:"人員工作單",rows:peopleRows()}];
   const seen=new Set();
   sheets.forEach(s=>{
@@ -1442,7 +1636,8 @@ function resolveLocal(remote){
   if(!local)return {state:remote};
   if(local.updatedAt===remote.updatedAt)return {state:local};
   const text=publishable(local);
-  let base=null;try{base=localStorage.getItem(BASE_KEY)}catch(e){}
+  let base=null;
+  try{const raw=localStorage.getItem(BASE_KEY),o=raw?JSON.parse(raw):null;if(valid(o))base=publishable(normalize(o))}catch(e){}
   // GitHub Pages 還沒更新完：剛發布的版本比網址讀到的新
   if(local.updatedAt&&remote.updatedAt&&local.updatedAt>remote.updatedAt){
     if(base===text)mode.remoteText=text;
@@ -1466,13 +1661,17 @@ function diffLines(local,remote){
     const a=fmt(local.leads[k]),b=fmt(remote.leads[k]);
     if(a!==b)out.push(label(k)+" 負責人：線上「"+b+"」，這台「"+a+"」");
   }
+  for(const k of new Set([...Object.keys(local.leadNeeds||{}),...Object.keys(remote.leadNeeds||{})])){
+    const a=(local.leadNeeds||{})[k]||1,b=(remote.leadNeeds||{})[k]||1;
+    if(a!==b)out.push(label(k)+" 需求人數：線上 "+b+" 人，這台 "+a+" 人");
+  }
   const lj=new Map(local.jobs.map(j=>[j.id,j])),rj=new Map(remote.jobs.map(j=>[j.id,j]));
   for(const [id,j] of rj)if(!lj.has(id))out.push("工作「"+j.title+"」只在線上版");
   for(const [id,j] of lj){
     const r=rj.get(id);
     if(!r){out.push("工作「"+j.title+"」只在這台");continue}
     if(fmt(j.people)!==fmt(r.people))out.push("工作「"+j.title+"」：線上「"+fmt(r.people)+"」，這台「"+fmt(j.people)+"」");
-    else if(j.title!==r.title||j.linkId!==r.linkId||j.note!==r.note||j.start!==r.start||j.end!==r.end)out.push("工作「"+j.title+"」內容不同");
+    else if(j.title!==r.title||j.linkId!==r.linkId||j.note!==r.note||j.need!==r.need||j.start!==r.start||j.end!==r.end)out.push("工作「"+j.title+"」內容不同");
   }
   const ls=new Map(local.sessions.map(s=>[s.id,s])),rs=new Map(remote.sessions.map(s=>[s.id,s]));
   for(const [id,s] of rs){
