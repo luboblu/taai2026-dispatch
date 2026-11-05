@@ -19,6 +19,7 @@
   color-scheme:dark;
 }}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans)}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 12px}
@@ -111,6 +112,11 @@ dialog form{display:grid;gap:12px}
 .row-end{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
 .role-row{display:flex;gap:6px}
 .role-row input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.card-jobs{font-size:13px;color:var(--muted)}
+.job-line{display:block;margin-top:4px;font-size:13px}
+button.job-line{border:0;padding:0;text-align:left;background:none;color:var(--accent)}
+button.job-line:hover{background:none;text-decoration:underline}
+.job-none{color:var(--bad)}
 .ro .edit-only{display:none!important}
 .ro input:disabled,.ro select:disabled{opacity:1;-webkit-text-fill-color:var(--fg);color:var(--fg);background:transparent;padding-left:0;appearance:none;-webkit-appearance:none}
 .ro .note input:placeholder-shown{visibility:hidden}
@@ -168,6 +174,27 @@ dialog form{display:grid;gap:12px}
   <div class="fields"><label style="flex-basis:100%">GitHub token<input id="fToken" type="password" autocomplete="off" required></label></div>
   <p class="tip" id="loginErr" hidden></p>
   <div class="row-end"><button type="button" id="loginCancel">取消</button><button type="submit" class="primary">登入</button></div>
+</form></dialog>
+
+<dialog id="dlgJob"><form method="dialog" id="formJob">
+  <h3 id="dlgJobTitle">新增工作</h3>
+  <div class="fields">
+    <label style="flex-basis:100%">工作名稱<input id="jTitle" required maxlength="100" placeholder="例如：計時、麥克風、貴賓接待"></label>
+    <label style="flex-basis:100%">對應議程<select id="jLink"></select></label>
+    <label id="jRoomWrap">區域<select id="jRoom"></select></label>
+    <label id="jDayWrap">日期<select id="jDay"></select></label>
+    <label id="jStartWrap">開始<input id="jStart" type="time"></label>
+    <label id="jEndWrap">結束<input id="jEnd" type="time"></label>
+    <label style="flex-basis:100%">負責人<input id="jPeople" list="peopleList" placeholder="可先留空，多人用頓號分開"></label>
+    <label style="flex-basis:100%">備註<input id="jNote" maxlength="200"></label>
+  </div>
+  <p class="tip" id="jErr" hidden></p>
+  <div class="row-end">
+    <button type="button" class="danger" id="jDelete">刪除</button>
+    <span class="spacer"></span>
+    <button type="button" id="jCancel">取消</button>
+    <button type="submit" class="primary">儲存</button>
+  </div>
 </form></dialog>
 
 <dialog id="dlgRoles"><form method="dialog" id="formRoles">
@@ -243,7 +270,7 @@ const busSessions=()=>BUS.map((b,i)=>({id:"bus"+i,room:"bus",day:b[0],start:b[1]
 function freshState(){
   let n=0;const roles={};
   for(const k in DEFAULT_ROLES) roles[k]=DEFAULT_ROLES[k].map(name=>({id:"r"+(++n),name}));
-  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
+  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},jobs:[],sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
 }
 function valid(s){return s&&typeof s==="object"&&Array.isArray(s.sessions)&&s.roles&&typeof s.roles==="object"}
 // 舊版資料：已填的人員全部保留，只移除沒填過的預設職務欄
@@ -270,6 +297,8 @@ function normalize(s){
   s.leads=s.leads&&typeof s.leads==="object"?s.leads:{};
   s.leadStatus=s.leadStatus&&typeof s.leadStatus==="object"?s.leadStatus:{};
   s.nextId=Number(s.nextId)||5000;
+  s.jobs=(Array.isArray(s.jobs)?s.jobs:[]).filter(j=>j&&typeof j==="object"&&j.id);
+  s.jobs.forEach(j=>{j.title=String(j.title||"");j.people=String(j.people||"");j.note=String(j.note||"");if(!STATUS.includes(j.status))j.status=STATUS[0]});
   ROOMS.forEach(r=>{if(!Array.isArray(s.roles[r.k]))s.roles[r.k]=[]});
   s.sessions.forEach(x=>{x.assign=x.assign&&typeof x.assign==="object"?x.assign:{};if(!STATUS.includes(x.status))x.status=STATUS[0];x.note=x.note||"";x.sub=x.sub||""});
   return s;
@@ -302,7 +331,7 @@ let saveTimer;
 function publishable(s){
   const people={};
   for(const n in s.people){const g=s.people[n]&&s.people[n].group;people[n]=g?{group:g}:{}}
-  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,sessions:s.sessions,people},null,1);
+  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,jobs:s.jobs,sessions:s.sessions,people},null,1);
 }
 function fmtTime(iso){const d=new Date(iso);if(isNaN(d))return "";const p=x=>String(x).padStart(2,"0");return p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())}
 function setHostedStatus(){
@@ -332,8 +361,15 @@ function progress(s){
   return {need,done,cls:need&&done>=need?"full":done?"part":""};
 }
 function sumProgress(list){return list.reduce((a,s)=>{const p=progress(s);a.need+=p.need;a.done+=p.done;return a},{need:0,done:0})}
+function jobInfo(j){
+  const s=j.linkId?state.sessions.find(x=>x.id===j.linkId):null;
+  return s?{id:"job-"+j.id,room:s.room,day:s.day,start:s.start,end:s.end,title:j.title,link:s,linkId:s.id}:{id:"job-"+j.id,room:j.room,day:j.day,start:j.start,end:j.end,title:j.title,link:null,linkId:null};
+}
+const jobsInRoom=k=>state.jobs.filter(j=>jobInfo(j).room===k);
+function linkLabel(s){const code=/^[A-Z]+\d+/.exec(s.sub||"");return (code?code[0]+" ":"")+s.title}
 function areaProgress(k){
   const p=sumProgress(state.sessions.filter(s=>s.room===k)),r=roomOf(k),v=state.leads[k];
+  for(const j of jobsInRoom(k)){p.need++;if(names(j.people).length)p.done++}
   if(r.lead&&!isNA(v)){p.need++;if(names(v).length)p.done++}
   return p;
 }
@@ -354,6 +390,10 @@ function allTasks(){
   for(const r of ROOMS)if(r.lead)for(const n of names(state.leads[r.k]))for(const s of leadTasks(r.k)){
     if(!map.has(n))map.set(n,[]);map.get(n).push({s,role:"負責人",roleId:"lead"});
   }
+  for(const j of state.jobs)for(const n of names(j.people)){
+    const s=jobInfo(j);
+    if(!map.has(n))map.set(n,[]);map.get(n).push({s,role:s.link?linkLabel(s.link):"自訂工作",roleId:"job"});
+  }
   for(const n of Object.keys(state.people))if(!map.has(n))map.set(n,[]);
   map.forEach(list=>list.sort((a,b)=>dayOf(a.s.day).k.localeCompare(dayOf(b.s.day).k)||byTime(a.s,b.s)));
   return map;
@@ -361,6 +401,8 @@ function allTasks(){
 function overlaps(a,b){
   if(a.id===b.id||a.day!==b.day||a.day==="x")return false;
   if((a.isLead||b.isLead)&&a.room===b.room)return false;
+  if(a.linkId&&(a.linkId===b.linkId||a.linkId===b.id))return false;
+  if(b.linkId&&b.linkId===a.id)return false;
   return a.start<b.end&&b.start<a.end;
 }
 function conflictInfo(map){
@@ -373,7 +415,7 @@ function renderTabs(){
   const tp=ROOMS.reduce((a,r)=>{const p=areaProgress(r.k);a.need+=p.need;a.done+=p.done;return a},{need:0,done:0});
   $("total").textContent="已派 "+tp.done+" / "+tp.need;
   const bad=conflictInfo(allTasks()).size;
-  $("tabs").innerHTML='<button type="button" data-tab="overview" class="'+(ui.view==="people"?"":"on")+'">各區負責人</button>'
+  $("tabs").innerHTML='<button type="button" data-tab="overview" class="'+(ui.view==="people"||ui.view==="jobs"?"":"on")+'">各區負責人</button><button type="button" data-tab="jobs" class="'+(ui.view==="jobs"?"on":"")+'">工作</button>'
     +'<button type="button" data-tab="people" class="'+(ui.view==="people"?"on":"")+'">人員'+(bad?'<span class="pill bad" style="margin-left:6px">'+bad+" 人撞時段</span>":"")+"</button>";
 }
 function banners(){
@@ -382,13 +424,38 @@ function banners(){
   if(!storageOK)h+='<div class="banner err">這個瀏覽器無法自動儲存，關閉前請按「備份」保存資料。</div>';
   return h;
 }
+function jobLines(list){
+  return list.map(j=>{
+    const who=names(j.people).join("、"),text=j.title+"："+(who||"尚未指派");
+    return mode.canEdit?'<button type="button" class="job-line" data-editjob="'+esc(j.id)+'">'+esc(text)+"</button>":'<span class="job-line">'+esc(text)+"</span>";
+  }).join("");
+}
+function renderJobs(){
+  let h=banners()+'<div class="head"><h2>工作</h2><span class="spacer"></span><button type="button" class="primary edit-only" data-addjob="1">新增工作</button></div>';
+  if(!state.jobs.length)h+='<p class="muted">目前還沒有工作。'+(mode.canEdit?"按「新增工作」，選好對應的議程場次，時間和地點會自動帶入。":"")+"</p>";
+  for(const d of DAYS){
+    const rows=state.jobs.map(j=>({j,i:jobInfo(j)})).filter(x=>x.i.day===d.k).sort((a,b)=>byTime(a.i,b.i)||ROOMS.findIndex(r=>r.k===a.i.room)-ROOMS.findIndex(r=>r.k===b.i.room));
+    if(!rows.length)continue;
+    h+='<section><h3>'+esc(d.name)+'</h3><div class="scroll"><table><thead><tr><th>時間</th><th>工作</th><th>負責人</th><th>狀態</th><th class="edit-only"></th></tr></thead><tbody>';
+    for(const {j,i} of rows){
+      const r=roomOf(i.room),v=j.status,info=r.name+(i.link?" · "+linkLabel(i.link):" · 自訂");
+      h+='<tr><td class="time">'+esc(i.start)+"–"+esc(i.end)+'</td><td class="task"><b>'+esc(j.title)+"</b><small>"+esc(info)+"</small>"+(j.note?"<small>"+esc(j.note)+"</small>":"")+"</td>"
+        +'<td><input aria-label="'+esc(j.title+" 負責人")+'" data-job="'+esc(j.id)+'" list="peopleList" value="'+esc(j.people)+'" placeholder="尚未指派"></td>'
+        +'<td class="st"><button type="button" class="statuspill s'+STATUS.indexOf(v)+'" data-jobcycle="'+esc(j.id)+'">'+esc(v)+"</button></td>"
+        +'<td class="edit-only act"><button type="button" class="ghost" data-editjob="'+esc(j.id)+'">編輯</button></td></tr>';
+    }
+    h+="</tbody></table></div></section>";
+  }
+  $("main").innerHTML=h;
+  refreshInputs();
+}
 function statusPill(k){const v=state.leadStatus[k]||STATUS[0];return '<button type="button" class="statuspill s'+STATUS.indexOf(v)+'" data-cycle="'+esc(k)+'" title="點一下切換狀態">'+esc(v)+"</button>"}
 function renderRoom(){
   const room=roomOf(ui.room),roles=state.roles[room.k]||[],list=state.sessions.filter(s=>s.room===room.k);
   const p=areaProgress(room.k);
   let h=banners()+'<button type="button" class="ghost back" data-back="1">‹ 回到各區負責人</button>'
     +'<div class="head"><h2>'+esc(room.name)+'</h2><span class="muted">'+esc(room.place)+'</span><span class="spacer"></span>'
-    +'<button type="button" class="edit-only ghost" id="addTask">新增工作</button><button type="button" class="edit-only ghost" id="editRoles">加欄位</button></div>';
+    +'<button type="button" class="edit-only ghost" data-addjob="1" data-room="'+esc(room.k)+'">新增工作</button><button type="button" class="edit-only ghost" id="editRoles">加欄位</button></div>';
   if(room.lead)h+='<div class="leadbox lead-row"><span class="lead-label">負責人</span><input aria-label="負責人" data-lead="'+esc(room.k)+'" list="peopleList" value="'+esc(state.leads[room.k]||"")+'" placeholder="輸入姓名">'+statusPill(room.k)+"</div>";
   for(const d of DAYS){
     let rows=list.filter(s=>s.day===d.k).sort(byTime);
@@ -399,15 +466,17 @@ function renderRoom(){
       +roles.map(r=>"<th>"+esc(r.name)+"</th>").join("")+'<th>狀態</th><th>備註</th><th class="edit-only"></th></tr></thead>':"")+'<tbody>';
     if(!rows.length)h+='<tr><td colspan="'+(roles.length+5)+'" class="muted">這一天都派滿了。</td></tr>';
     for(const s of rows){
-      h+='<tr id="row-'+esc(s.id)+'" class="'+(ui.flash===s.id?"flash":"")+'"><td class="time">'+esc(s.start)+"–"+esc(s.end)+'</td><td class="task"><b>'+esc(s.title)+"</b>"+(s.sub?"<small>"+esc(s.sub)+"</small>":"")+"</td>";
+      h+='<tr id="row-'+esc(s.id)+'" class="'+(ui.flash===s.id?"flash":"")+'"><td class="time">'+esc(s.start)+"–"+esc(s.end)+'</td><td class="task"><b>'+esc(s.title)+"</b>"+(s.sub?"<small>"+esc(s.sub)+"</small>":"")+jobLines(state.jobs.filter(j=>j.linkId===s.id))+"</td>";
       for(const r of roles)h+='<td><input aria-label="'+esc(s.title+" "+r.name)+'" list="peopleList" data-s="'+esc(s.id)+'" data-r="'+esc(r.id)+'" value="'+esc(s.assign[r.id]||"")+'"></td>';
       if(roles.length)h+='<td class="st"><select aria-label="狀態" data-status="'+esc(s.id)+'">'+STATUS.map(x=>"<option"+(x===s.status?" selected":"")+">"+x+"</option>").join("")+"</select></td>";
       h+='<td class="note"><input aria-label="備註" placeholder="備註" data-note="'+esc(s.id)+'" value="'+esc(s.note)+'"></td>'
-        +'<td class="edit-only act"><button type="button" class="ghost" data-edit="'+esc(s.id)+'">編輯</button></td></tr>';
+        +'<td class="edit-only act"><button type="button" class="ghost" data-addjob="1" data-link="'+esc(s.id)+'">＋工作</button><button type="button" class="ghost" data-edit="'+esc(s.id)+'">編輯</button></td></tr>';
     }
     h+="</tbody></table></div></section>";
   }
-  if(!list.length)h+='<p class="muted">這個區域還沒有工作，按「新增工作」加入第一項。</p>';
+  const free=state.jobs.filter(j=>!j.linkId&&j.room===room.k);
+  if(free.length)h+='<section><h3>其他工作</h3><div class="scroll"><table><tbody>'+free.map(j=>'<tr><td class="time">'+esc(dayOf(j.day).short)+" "+esc(j.start)+"–"+esc(j.end)+'</td><td class="task">'+jobLines([j])+"</td></tr>").join("")+"</tbody></table></div></section>";
+  if(!list.length&&!free.length)h+='<p class="muted">這個區域還沒有工作，按「新增工作」加入第一項。</p>';
   $("main").innerHTML=h;
   refreshInputs();
 }
@@ -422,6 +491,12 @@ function refreshInputs(){
     if(clash.length){
       el.title=clash.map(n=>n+" 同時段也在："+bad.get(n).get(sid).map(t=>roomOf(t.s.room).name+" "+t.s.title+"（"+t.s.start+"–"+t.s.end+"）").join("、")).join("\n");
     }else el.removeAttribute("title");
+  });
+  document.querySelectorAll("input[data-job]").forEach(el=>{
+    const ns=names(el.value),id="job-"+el.dataset.job;
+    const clash=ns.filter(n=>bad.has(n)&&bad.get(n).has(id));
+    el.classList.toggle("conflict",clash.length>0);
+    if(clash.length)el.title=clash.map(n=>n+" 同時段也在："+bad.get(n).get(id).map(t=>roomOf(t.s.room).name+" "+t.s.title+"（"+t.s.start+"–"+t.s.end+"）").join("、")).join("\n");else el.removeAttribute("title");
   });
   document.querySelectorAll("input[data-lead]").forEach(el=>{
     const k=el.dataset.lead,ns=names(el.value);
@@ -440,7 +515,9 @@ function renderOverview(){
     const p=areaProgress(r.k);
     h+='<article class="card"><button type="button" class="card-top" data-tab-go="'+esc(r.k)+'"><span><span class="card-name">'+esc(r.name)+'</span><span class="card-place">'+esc(r.place)+'</span></span><span class="chev" aria-hidden="true">›</span></button>';
     if(r.lead)h+='<div class="lead-row"><input aria-label="'+esc(r.name+" 負責人")+'" data-lead="'+esc(r.k)+'" list="peopleList" value="'+esc(state.leads[r.k]||"")+'" placeholder="尚未指派">'+statusPill(r.k)+"</div>";
-    else h+='<div class="bus-count">隨車已派 '+p.done+" / "+p.need+" 班</div>";
+    else{const q=sumProgress(state.sessions.filter(s=>s.room===r.k));h+='<div class="bus-count">隨車已派 '+q.done+" / "+q.need+" 班</div>"}
+    const js=jobsInRoom(r.k);
+    if(js.length){const open=js.filter(j=>!names(j.people).length).length;h+='<div class="card-jobs">工作 '+js.length+" 項"+(open?"，"+open+" 項未派":"")+"</div>"}
     h+="</article>";
   }
   $("main").innerHTML=h+"</section>";
@@ -460,6 +537,7 @@ function mapNames(v,fn){
 function eachField(fn){
   for(const s of state.sessions)for(const r in s.assign)s.assign[r]=mapNames(s.assign[r],fn);
   for(const k in state.leads)state.leads[k]=mapNames(state.leads[k],fn);
+  for(const j of state.jobs)j.people=mapNames(j.people,fn);
 }
 function renamePerson(oldName,newName){
   if(state.people[newName]||allTasks().has(newName)){
@@ -511,7 +589,7 @@ function applyMode(){
 }
 function render(){
   renderTabs();
-  if(ui.view==="overview")renderOverview();else if(ui.view==="people")renderPeople();else renderRoom();
+  if(ui.view==="overview")renderOverview();else if(ui.view==="people")renderPeople();else if(ui.view==="jobs")renderJobs();else renderRoom();
   applyMode();
   ui.message=null;
   if(ui.flash){const el=$("row-"+ui.flash);if(el)el.scrollIntoView({block:"center"});ui.flash=null}
@@ -520,7 +598,8 @@ function render(){
 // 填寫事件
 $("main").addEventListener("input",e=>{
   const el=e.target,find=id=>state.sessions.find(s=>s.id===id);
-  if(el.dataset.lead){state.leads[el.dataset.lead]=el.value;save()}
+  if(el.dataset.job){const j=state.jobs.find(x=>x.id===el.dataset.job);if(j){j.people=el.value;save()}}
+  else if(el.dataset.lead){state.leads[el.dataset.lead]=el.value;save()}
   else if(el.dataset.s){const s=find(el.dataset.s);if(s){s.assign[el.dataset.r]=el.value;save()}}
   else if(el.dataset.note){const s=find(el.dataset.note);if(s){s.note=el.value;save()}}
   else if(el.dataset.pinfo){const n=el.dataset.p;state.people[n]=state.people[n]||{};state.people[n][el.dataset.pinfo]=el.value;save()}
@@ -535,7 +614,7 @@ $("main").addEventListener("change",e=>{
     return;
   }
   if(el.dataset.leadstatus){state.leadStatus[el.dataset.leadstatus]=el.value;save();return}
-  if(el.dataset.s||el.dataset.lead){refreshInputs();renderTabs();updateRoomPill()}
+  if(el.dataset.s||el.dataset.lead||el.dataset.job){refreshInputs();renderTabs();updateRoomPill()}
 });
 function updateRoomPill(){
   const pill=document.querySelector(".head .pill");if(!pill)return;
@@ -550,10 +629,15 @@ $("main").addEventListener("click",e=>{
     const k=b.dataset.cycle,i=STATUS.indexOf(state.leadStatus[k]||STATUS[0]),v=STATUS[(i+1)%STATUS.length];
     state.leadStatus[k]=v;b.textContent=v;b.className="statuspill s"+STATUS.indexOf(v);save();return;
   }
+  if(b.dataset.addjob){openJob(null,{link:b.dataset.link,room:b.dataset.room});return}
+  if(b.dataset.editjob){openJob(b.dataset.editjob);return}
+  if(b.dataset.jobcycle){
+    const j=state.jobs.find(x=>x.id===b.dataset.jobcycle);if(!j)return;
+    j.status=STATUS[(STATUS.indexOf(j.status)+1)%STATUS.length];b.textContent=j.status;b.className="statuspill s"+STATUS.indexOf(j.status);save();return;
+  }
   if(b.dataset.delperson){removePerson(b.dataset.delperson);return}
   if(b.dataset.back){ui.view="overview";save();render();window.scrollTo(0,0);return}
   if(b.dataset.tabGo){ui.view="room";ui.room=b.dataset.tabGo;save();render();window.scrollTo(0,0)}
-  else if(b.id==="addTask")openTask(null);
   else if(b.id==="editRoles")openRoles();
   else if(b.dataset.edit)openTask(b.dataset.edit);
   else if(b.dataset.jump){const s=state.sessions.find(x=>x.id===b.dataset.jump);if(s){ui.view="room";ui.room=s.room;ui.onlyOpen=false;ui.flash=s.id;save();render()}}
@@ -590,7 +674,8 @@ function openTask(id){
 $("fCancel").addEventListener("click",()=>$("dlgTask").close());
 $("fDelete").addEventListener("click",()=>{
   const s=state.sessions.find(x=>x.id===editing);if(!s)return;
-  if(!window.confirm("確定刪除「"+s.title+"」？這一列已填的人員與備註也會一起刪除。"))return;
+  if(!window.confirm("確定刪除「"+s.title+"」？這一列已填的人員與備註會一起刪除，對應到這裡的工作會保留並改為自訂時間。"))return;
+  state.jobs.filter(j=>j.linkId===s.id).forEach(j=>{j.linkId=null;j.room=s.room;j.day=s.day;j.start=s.start;j.end=s.end});
   state.sessions=state.sessions.filter(x=>x.id!==editing);$("dlgTask").close();save();render();
 });
 $("formTask").addEventListener("submit",e=>{
@@ -602,6 +687,55 @@ $("formTask").addEventListener("submit",e=>{
     Object.assign(s,v);
   }else state.sessions.push(Object.assign({id:"c"+(state.nextId++),assign:{},status:STATUS[0],note:""},v));
   ui.room=v.room;ui.view="room";save();render();
+});
+
+// 工作編輯視窗
+let editingJob=null;
+$("jRoom").innerHTML=ROOMS.map(r=>'<option value="'+r.k+'">'+esc(r.name)+"</option>").join("");
+$("jDay").innerHTML=DAYS.map(d=>'<option value="'+d.k+'">'+esc(d.short)+"</option>").join("");
+function fillLinkOptions(){
+  let h='<option value="">不對應議程（自訂時間）</option>';
+  for(const d of DAYS){
+    const rows=sortedSessions(state.sessions.filter(s=>s.day===d.k));
+    if(!rows.length)continue;
+    h+='<optgroup label="'+esc(d.short)+'">'+rows.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.start+"–"+s.end+" "+roomOf(s.room).name+" "+linkLabel(s))+"</option>").join("")+"</optgroup>";
+  }
+  $("jLink").innerHTML=h;
+}
+function toggleJobCustom(){
+  const custom=!$("jLink").value;
+  ["jRoomWrap","jDayWrap","jStartWrap","jEndWrap"].forEach(id=>{$(id).hidden=!custom});
+}
+function openJob(id,opts){
+  opts=opts||{};editingJob=id;fillLinkOptions();
+  const j=id?state.jobs.find(x=>x.id===id):null;
+  $("dlgJobTitle").textContent=j?"編輯工作":"新增工作";
+  $("jTitle").value=j?j.title:"";
+  $("jLink").value=j?(j.linkId||""):(opts.link||"");
+  $("jRoom").value=(j&&j.room)||opts.room||"main";
+  $("jDay").value=(j&&j.day)||"d1";
+  $("jStart").value=(j&&j.start)||"08:00";
+  $("jEnd").value=(j&&j.end)||"09:00";
+  $("jPeople").value=j?j.people:"";
+  $("jNote").value=j?j.note:"";
+  $("jErr").hidden=true;$("jDelete").hidden=!j;
+  toggleJobCustom();$("dlgJob").showModal();
+}
+$("jLink").addEventListener("change",toggleJobCustom);
+$("jCancel").addEventListener("click",()=>$("dlgJob").close());
+$("jDelete").addEventListener("click",()=>{
+  const j=state.jobs.find(x=>x.id===editingJob);if(!j)return;
+  if(!window.confirm("確定刪除工作「"+j.title+"」？"))return;
+  state.jobs=state.jobs.filter(x=>x!==j);$("dlgJob").close();save();render();
+});
+$("formJob").addEventListener("submit",e=>{
+  const title=$("jTitle").value.trim(),linkId=$("jLink").value||null,err=m=>{e.preventDefault();$("jErr").hidden=false;$("jErr").textContent=m};
+  if(!title)return err("請填寫工作名稱。");
+  if(!linkId&&(!$("jStart").value||!$("jEnd").value||$("jEnd").value<=$("jStart").value))return err("結束時間要晚於開始時間。");
+  let j=editingJob?state.jobs.find(x=>x.id===editingJob):null;
+  if(!j){j={id:"j"+(state.nextId++),status:STATUS[0]};state.jobs.push(j)}
+  Object.assign(j,{title,linkId,people:$("jPeople").value.trim(),note:$("jNote").value.trim(),room:linkId?null:$("jRoom").value,day:linkId?null:$("jDay").value,start:linkId?null:$("jStart").value,end:linkId?null:$("jEnd").value});
+  save();render();
 });
 
 // 職務設定視窗
@@ -640,10 +774,17 @@ function flatRows(){
       rows.push([dayOf(s.day).short,s.start,s.end,r.name,r.noPlace?"":r.place,s.title,s.sub,role.name,v.trim(),s.status,s.note]);
     }
   }
+  for(const j of jobsSorted()){const i=jobInfo(j),r=roomOf(i.room);rows.push([dayOf(i.day).short,i.start,i.end,r.name,r.noPlace?"":r.place,j.title,i.link?"對應："+linkLabel(i.link):"自訂工作","工作",j.people.trim(),j.status,j.note])}
   return rows;
 }
+function jobsSorted(){
+  return [...state.jobs].sort((a,b)=>{const x=jobInfo(a),y=jobInfo(b);return DAYS.findIndex(d=>d.k===x.day)-DAYS.findIndex(d=>d.k===y.day)||byTime(x,y)});
+}
+function jobRows(){
+  return [["日期","開始","結束","區域","工作","對應議程","負責人","狀態","備註"],...jobsSorted().map(j=>{const i=jobInfo(j);return [dayOf(i.day).short,i.start,i.end,roomOf(i.room).name,j.title,i.link?linkLabel(i.link):"",j.people.trim(),j.status,j.note]})];
+}
 function peopleRows(){
-  const rows=[["姓名","組別","聯絡方式","日期","開始","結束","廳別","場次／工作","職務","時段重疊"]],map=allTasks(),bad=conflictInfo(map);
+  const rows=[["姓名","組別","聯絡方式","日期","開始","結束","區域","工作","職務／對應場次","時段重疊"]],map=allTasks(),bad=conflictInfo(map);
   [...map.keys()].sort((a,b)=>a.localeCompare(b,"zh-Hant")).forEach(n=>{
     const i=state.people[n]||{},list=map.get(n);
     if(!list.length)rows.push([n,i.group||"",i.contact||"","","","","","","",""]);
@@ -697,7 +838,7 @@ function sheetXml(rows){
 }
 function buildXlsx(){
   const leadRows=[["區域","地點","負責人","狀態"],...ROOMS.filter(r=>r.lead).map(r=>[r.name,r.place,(state.leads[r.k]||"").trim(),state.leadStatus[r.k]||STATUS[0]])];
-  const sheets=[{name:"負責人總覽",rows:leadRows},{name:"總表",rows:flatRows()},...ROOMS.map(r=>({name:r.name,rows:roomRows(r)})),{name:"人員工作單",rows:peopleRows()}];
+  const sheets=[{name:"負責人總覽",rows:leadRows},{name:"工作",rows:jobRows()},{name:"總表",rows:flatRows()},...ROOMS.map(r=>({name:r.name,rows:roomRows(r)})),{name:"人員工作單",rows:peopleRows()}];
   const files=[
     {name:"[Content_Types].xml",text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((s,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("")+"</Types>"},
     {name:"_rels/.rels",text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
@@ -755,11 +896,16 @@ function mergeLocal(remoteState){
   for(const n in local.people){const c=local.people[n]&&local.people[n].contact;if(c){remoteState.people[n]=remoteState.people[n]||{};remoteState.people[n].contact=c}}
   return remoteState;
 }
+const noWriteMessage=()=>"這個 token 沒有寫入權限。請到 GitHub 的 token 設定，把 "+REPO.repo+" 加進 Repository access，並把 Contents 設為 Read and write，儲存後再試一次。";
 async function checkToken(){
   const r=await fetch(API+"/repos/"+REPO.owner+"/"+REPO.repo,{headers:ghHeaders()});
-  if(!r.ok)return false;
+  if(!r.ok)return "bad";
   const j=await r.json();
-  return !!(j.permissions&&j.permissions.push);
+  if(!(j.permissions&&j.permissions.push))return "bad";
+  // 故意送無效內容：權限足夠時 GitHub 回 422 且不會寫入，權限不足則回 403
+  const probe=await fetch(contentsUrl(),{method:"PUT",headers:{...ghHeaders(),"Content-Type":"application/json"},body:JSON.stringify({message:"check",content:"!"})});
+  if(probe.status===401)return "bad";
+  return probe.status===403?"nowrite":"ok";
 }
 async function loadHosted(){
   try{
@@ -775,9 +921,12 @@ async function boot(){
   if(!REPO)return;
   try{mode.token=localStorage.getItem(TOKEN_KEY)}catch(e){}
   if(mode.token){
-    let ok=false;try{ok=await checkToken()}catch(e){}
-    if(ok)mode.canEdit=true;
-    else{mode.token=null;try{localStorage.removeItem(TOKEN_KEY)}catch(e){}ui.message="編輯登入已失效，請重新登入。";ui.msgErr=true}
+    let res="error";try{res=await checkToken()}catch(e){}
+    if(res==="bad"){mode.token=null;try{localStorage.removeItem(TOKEN_KEY)}catch(e){}ui.message="編輯登入已失效，請重新登入。";ui.msgErr=true}
+    else{
+      mode.canEdit=true;
+      if(res==="nowrite"){ui.message=noWriteMessage();ui.msgErr=true}
+    }
   }
   await loadHosted();
   setInterval(async()=>{
@@ -803,7 +952,7 @@ $("btnPublish").addEventListener("click",async()=>{
     ui.message="已發布。大家重新整理後約 1 分鐘內會看到。";ui.msgErr=false;
   }catch(e){
     const m=String(e.message||"");
-    ui.message=/401|403/.test(m)?"發布失敗：GitHub 拒絕這個 token，請重新登入。":/409|422/.test(m)?"發布失敗：GitHub 上的資料剛更新過，請再按一次發布。":"發布失敗，內容還保留在這個瀏覽器。請確認網路後再試。";ui.msgErr=true;
+    ui.message=/403/.test(m)?"發布失敗："+noWriteMessage():/401/.test(m)?"發布失敗：token 已失效或過期，請登出後用新的 token 登入。":/409|422/.test(m)?"發布失敗：GitHub 上的資料剛更新過，請再按一次發布。":"發布失敗，內容還保留在這個瀏覽器。請確認網路後再試。";ui.msgErr=true;
   }
   mode.publishing=false;$("btnPublish").textContent="發布更新";render();
 });
@@ -820,8 +969,12 @@ $("loginCancel").addEventListener("click",()=>$("dlgLogin").close());
 $("formLogin").addEventListener("submit",async e=>{
   e.preventDefault();
   mode.token=$("fToken").value.trim();
-  let ok=false;try{ok=await checkToken()}catch(err){}
-  if(!ok){mode.token=null;$("loginErr").hidden=false;$("loginErr").textContent="登入失敗：這個 token 沒有這個 repo 的寫入權限。";return}
+  let res="error";try{res=await checkToken()}catch(err){}
+  if(res!=="ok"){
+    mode.token=null;$("loginErr").hidden=false;
+    $("loginErr").textContent=res==="nowrite"?noWriteMessage():res==="bad"?"登入失敗：這個 token 無效，或它的帳號沒有這個 repo 的權限。":"連不上 GitHub，請確認網路後再試。";
+    return;
+  }
   try{localStorage.setItem(TOKEN_KEY,mode.token)}catch(err){}
   mode.canEdit=true;$("fToken").value="";$("dlgLogin").close();
   await loadHosted();
