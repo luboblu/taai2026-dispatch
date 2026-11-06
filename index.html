@@ -266,6 +266,18 @@ dialog h2{font-size:.9375rem;font-weight:600}
 .note-view li::before{content:counter(note) ".";color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
 .note-view .t{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75}
 .note-view small{grid-column:2;color:var(--muted);font-size:.75rem}
+.room-notes{border:1px solid var(--line);border-radius:7px;padding:10px 14px 12px;display:grid;gap:6px}
+.room-notes h2,.room-notes-all h2{font-size:.875rem;font-weight:600}
+.room-notes .note-head .tip{margin-left:auto}
+.room-notes .note-list:empty{display:none}
+.room-notes .note-view{border:0;max-width:none}
+.room-notes .note-view li{padding:6px 0}
+.room-notes-all{display:grid;gap:10px}
+.room-notes-all .note-head .tip{margin-left:4px}
+.rn-group{display:grid;gap:4px}
+.rn-group h3{margin:0;font-size:.8438rem;font-weight:600}
+.rn-group h3 a{color:inherit;text-decoration:none}
+.rn-group h3 a:hover{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
 
 /* 官方議程 */
 .agenda-jump{display:flex;flex-wrap:wrap;gap:6px}
@@ -749,7 +761,7 @@ const busSessions=()=>BUS.map((b,i)=>({id:"bus"+i,room:"bus",day:b[0],start:b[1]
 function freshState(){
   let n=0;const roles={};
   for(const k in DEFAULT_ROLES) roles[k]=DEFAULT_ROLES[k].map(name=>({id:"r"+(++n),name}));
-  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},leadNeeds:{},todos:[],areas:[],areaOverrides:{},jobs:[],noteList:[],privateNoteList:[],notes:"",privateNotes:"",sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
+  return {v:2,nextId:n+1000,roles,leads:{...DEFAULT_LEADS},leadStatus:{},leadNeeds:{},todos:[],areas:[],areaOverrides:{},jobs:[],noteList:[],privateNoteList:[],roomNotes:{},notes:"",privateNotes:"",sessions:[...PRESET.map((p,i)=>({id:"s"+i,room:p[0],day:p[1],start:p[2],end:p[3],title:p[4],sub:p[5],assign:{},status:"未通知",note:""})),...busSessions()],people:{}};
 }
 function valid(s){return s&&typeof s==="object"&&Array.isArray(s.sessions)&&s.roles&&typeof s.roles==="object"}
 // 舊版資料：已填的人員全部保留，只移除沒填過的預設職務欄
@@ -799,6 +811,9 @@ function normalize(s){
   s.todos=(Array.isArray(s.todos)?s.todos:[]).filter(x=>x&&typeof x==="object"&&x.id);
   s.todos.forEach(x=>{x.title=String(x.title||"");x.people=String(x.people||"");x.note=String(x.note||"");x.due=/^\d{4}-\d{2}-\d{2}$/.test(x.due||"")?x.due:"";x.done=!!x.done});
   s.noteList=pickNotes(s.noteList,s.notes,"m");s.privateNoteList=pickNotes(s.privateNoteList,s.privateNotes,"q");
+  const rn={};
+  if(s.roomNotes&&typeof s.roomNotes==="object")for(const k in s.roomNotes){const l=noteList(Array.isArray(s.roomNotes[k])?s.roomNotes[k]:[],"");if(l.length)rn[k]=l}
+  s.roomNotes=rn;
   syncNotes(s);
   s.jobs=(Array.isArray(s.jobs)?s.jobs:[]).filter(j=>j&&typeof j==="object"&&j.id);
   s.jobs.forEach(j=>{j.title=String(j.title||"");j.people=String(j.people||"");j.note=String(j.note||"");j.need=Math.max(1,parseInt(j.need,10)||1);if(!STATUS.includes(j.status))j.status=STATUS[0]});
@@ -830,10 +845,15 @@ const isNA=v=>NA.test(String(v||"").trim());
 const byTime=(a,b)=>(a.start+a.end).localeCompare(b.start+b.end);
 
 let saveTimer;
+function roomNotesOut(s){
+  const keys=new Set([...BASE_ROOMS.map(r=>r.k),...(s.areas||[]).map(a=>a.k)]),out={};
+  for(const k in s.roomNotes||{})if(keys.has(k)&&s.roomNotes[k].length)out[k]=s.roomNotes[k];
+  return out;
+}
 function publishable(s){
   const people={};
   for(const n in s.people){const g=s.people[n]&&s.people[n].group;people[n]=g?{group:g}:{}}
-  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,leadNeeds:s.leadNeeds,todos:s.todos,areas:s.areas,areaOverrides:s.areaOverrides,jobs:s.jobs,notes:joinNotes(s.noteList),noteList:s.noteList,sessions:s.sessions,people},null,1);
+  return JSON.stringify({v:s.v,nextId:s.nextId,roles:s.roles,leads:s.leads,leadStatus:s.leadStatus,leadNeeds:s.leadNeeds,todos:s.todos,areas:s.areas,areaOverrides:s.areaOverrides,jobs:s.jobs,notes:joinNotes(s.noteList),noteList:s.noteList,roomNotes:roomNotesOut(s),sessions:s.sessions,people},null,1);
 }
 function fmtTime(iso){const d=new Date(iso);if(isNaN(d))return "";const p=x=>String(x).padStart(2,"0");return p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())}
 function setHostedStatus(){
@@ -1271,17 +1291,31 @@ function addTodos(raw){
 const NOTE_LISTS={pub:{key:"noteList",label:"公開備註"},priv:{key:"privateNoteList",label:"我的筆記"}};
 const FIELD_SIZING=typeof CSS!=="undefined"&&!!CSS.supports&&CSS.supports("field-sizing","content");
 function fitArea(el){if(FIELD_SIZING||!el)return;el.style.height="auto";el.style.height=(el.scrollHeight+2)+"px"}
-function noteArr(list){return state[(NOTE_LISTS[list]||NOTE_LISTS.pub).key]}
-function newNoteId(list){return list==="pub"?"n"+(state.nextId++):"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+const roomOfList=list=>String(list).startsWith("room:")?String(list).slice(5):"";
+// 區域的清單沒有內容時不建立，避免沒改東西也顯示「尚未發布」
+function noteArr(list,create){
+  const k=roomOfList(list);
+  if(k){if(!state.roomNotes[k]){if(!create)return [];state.roomNotes[k]=[]}return state.roomNotes[k]}
+  return state[(NOTE_LISTS[list]||NOTE_LISTS.pub).key];
+}
+function noteLabel(list){const k=roomOfList(list);return k?roomOf(k).name+" 備註":(NOTE_LISTS[list]||NOTE_LISTS.pub).label}
+function newNoteId(list){return list==="priv"?"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6):"n"+(state.nextId++)}
+function noteAddHtml(list,ph){
+  const L=noteLabel(list);
+  return '<div class="note-add"><textarea id="noteNew-'+esc(list)+'" rows="1" maxlength="2000" data-noteadd="'+esc(list)+'" aria-label="新增'+esc(L)+'" placeholder="'+esc(ph||"新增一條，按 Enter；Shift+Enter 換行")+'">'+esc(ui.noteDraft[list]||"")+'</textarea><button type="button" data-noteaddbtn="'+esc(list)+'">新增</button></div>';
+}
+function noteViewHtml(arr,label){
+  return '<ol class="note-view" aria-label="'+esc(label)+'">'+arr.map(n=>'<li><span class="t">'+esc(n.text)+"</span>"+(n.at?"<small>"+esc(fmtTime(n.at))+" 更新</small>":"")+"</li>").join("")+"</ol>";
+}
 function noteItemsHtml(list){
-  const arr=noteArr(list),L=NOTE_LISTS[list].label;
-  if(!arr.length)return '<p class="note-empty">'+(list==="pub"?"還沒有公開備註。":"還沒有筆記。")+"</p>";
-  const act=(a,n,label,cls)=>'<button type="button"'+(cls?' class="'+cls+'"':"")+' data-noteact="'+a+'" data-list="'+list+'" data-nid="'+esc(n.id)+'">'+label+"</button>";
+  const arr=noteArr(list),L=noteLabel(list),room=!!roomOfList(list);
+  if(!arr.length)return room?"":'<p class="note-empty">'+(list==="pub"?"還沒有公開備註。":"還沒有筆記。")+"</p>";
+  const act=(a,n,label,cls)=>'<button type="button"'+(cls?' class="'+cls+'"':"")+' data-noteact="'+a+'" data-list="'+esc(list)+'" data-nid="'+esc(n.id)+'">'+label+"</button>";
   return '<ol class="note-list">'+arr.map((n,i)=>'<li class="note-item">'
-    +'<textarea class="note-input" id="note-'+esc(n.id)+'" rows="1" maxlength="2000" data-list="'+list+'" data-nid="'+esc(n.id)+'" aria-label="'+L+" 第 "+(i+1)+' 條">'+esc(n.text)+"</textarea>"
+    +'<textarea class="note-input" id="note-'+esc(n.id)+'" rows="1" maxlength="2000" data-list="'+esc(list)+'" data-nid="'+esc(n.id)+'" aria-label="'+esc(L)+" 第 "+(i+1)+' 條">'+esc(n.text)+"</textarea>"
     +'<details class="menu note-more"><summary id="nm-'+esc(n.id)+'" aria-label="第 '+(i+1)+' 條的動作">⋯</summary><div class="menu-list">'
     +(i>0?act("up",n,"上移"):"")+(i<arr.length-1?act("down",n,"下移"):"")
-    +act("swap",n,list==="pub"?"移到我的筆記":"改為公開備註")+act("del",n,"刪除","menu-danger")+"</div></details>"
+    +(room?"":act("swap",n,list==="pub"?"移到我的筆記":"改為公開備註"))+act("del",n,"刪除","menu-danger")+"</div></details>"
     +(n.at?'<small class="note-at">'+esc(fmtTime(n.at))+" 更新</small>":"")
     +"</li>").join("")+"</ol>";
 }
@@ -1291,10 +1325,15 @@ function renderNotes(){
     const box=(list,tip)=>{
       const arr=noteArr(list),L=NOTE_LISTS[list].label;
       return '<section class="note-box" aria-labelledby="nh-'+list+'"><div class="note-head"><h2 id="nh-'+list+'">'+L+"</h2>"+(arr.length?'<span class="counter">'+arr.length+"</span>":"")+'</div><p class="tip">'+tip+"</p>"+noteItemsHtml(list)
-        +'<div class="note-add"><textarea id="noteNew-'+list+'" rows="1" maxlength="2000" data-noteadd="'+list+'" aria-label="新增'+L+'" placeholder="新增一條，按 Enter；Shift+Enter 換行">'+esc(ui.noteDraft[list]||"")+'</textarea><button type="button" data-noteaddbtn="'+list+'">新增</button></div></section>';
+        +noteAddHtml(list)+"</section>";
     };
     h+='<div class="notes-grid">'+box("pub",mode.hosted?"發布後所有人都看得到，請勿填寫電話或其他個資。":"匯出 Excel 時會一起帶出。")+box("priv","不會發布，也不會匯出，只存在這個瀏覽器。")+"</div>";
-  }else h+=state.noteList.length?'<ol class="note-view" aria-label="備註">'+state.noteList.map(n=>'<li><span class="t">'+esc(n.text)+"</span>"+(n.at?"<small>"+esc(fmtTime(n.at))+" 更新</small>":"")+"</li>").join("")+"</ol>":'<section class="blank"><p>目前沒有備註。</p></section>';
+  }else if(state.noteList.length)h+=noteViewHtml(state.noteList,"備註");
+  // 各廳備註的總覽（在各廳頁面編輯）
+  const rooms=ROOMS.filter(r=>(state.roomNotes[r.k]||[]).length);
+  if(rooms.length)h+='<section class="room-notes-all" aria-labelledby="nh-rooms"><div class="note-head"><h2 id="nh-rooms">各廳備註</h2>'+(mode.canEdit?'<span class="tip">到各廳頁面新增或修改</span>':"")+"</div>"
+    +rooms.map(r=>'<div class="rn-group"><h3><a href="#room-'+esc(r.k)+'">'+esc(r.name)+"</a></h3>"+noteViewHtml(state.roomNotes[r.k],r.name+" 備註")+"</div>").join("")+"</section>";
+  if(!mode.canEdit&&!state.noteList.length&&!rooms.length)h+='<section class="blank"><p>目前沒有備註。</p></section>';
   $("main").innerHTML=h;
   if(!FIELD_SIZING)document.querySelectorAll(".note-input,.note-add textarea").forEach(fitArea);
 }
@@ -1310,7 +1349,7 @@ function addNote(list,raw){
   const parts=splitNoteText(raw);
   if(!parts.length){toast("請先輸入內容。");const b=$("noteNew-"+list);if(b)b.focus();return}
   const before=JSON.stringify(state),at=new Date().toISOString();
-  for(const p of parts)noteArr(list).push({id:newNoteId(list),text:p.slice(0,2000),at});
+  for(const p of parts)noteArr(list,true).push({id:newNoteId(list),text:p.slice(0,2000),at});
   ui.noteDraft[list]="";save();refresh();
   const box=$("noteNew-"+list);if(box){box.value="";fitArea(box);box.focus()}
   if(parts.length>1)toast("已新增 "+parts.length+" 條。",undoFrom(before));
@@ -1355,6 +1394,10 @@ function renderAgenda(){
   if(!$("agendaFrame").dataset.url||ui.agendaJump){showAgendaFrame(at,true);ui.agendaJump=false}
 }
 function renderRoom(){
+  renderRoomBody();
+  if(!FIELD_SIZING)document.querySelectorAll(".note-input,.note-add textarea").forEach(fitArea);
+}
+function renderRoomBody(){
   const room=roomOf(ui.room),roles=state.roles[room.k]||[],list=state.sessions.filter(s=>s.room===room.k),one=roles.length===1?roles[0]:null;
   const blankCheck=mode.canEdit?'<td class="c-check"></td>':"";
   let h=banners()+'<div class="page-head"><div><h1 tabindex="-1">'+esc(room.name)+'</h1><p class="page-sub">'+esc(room.place)+(AGENDA_ROOMS.includes(room.k)?' · <a class="ag-link" href="#agenda-day1">官網議程</a>':"")+'</p></div><span class="spacer"></span>';
@@ -1365,6 +1408,9 @@ function renderRoom(){
     const has=names(state.leads[room.k]).length>0;
     h+='<dl class="props"><dt>負責人</dt><dd><div>'+chipsHtml("lead",room.k,"",room.name+" 負責人",leadNeed(room.k))+"</div>"+statusHtml("lead",room.k,state.leadStatus[room.k],has)+"</dd></dl>";
   }
+  const rl="room:"+room.k,rnotes=noteArr(rl);
+  if(mode.canEdit)h+='<section class="room-notes" aria-labelledby="rn-h"><div class="note-head"><h2 id="rn-h">備註</h2>'+(rnotes.length?'<span class="counter">'+rnotes.length+"</span>":"")+(mode.hosted?'<span class="tip">發布後所有人都看得到</span>':"")+"</div>"+noteItemsHtml(rl)+noteAddHtml(rl,"新增這個區域的備註，按 Enter；例如設備、動線、注意事項")+"</section>";
+  else if(rnotes.length)h+='<section class="room-notes" aria-labelledby="rn-h"><div class="note-head"><h2 id="rn-h">備註</h2></div>'+noteViewHtml(rnotes,room.name+" 備註")+"</section>";
   const free=state.jobs.filter(j=>!j.linkId&&j.room===room.k);
   const showPeople=roles.length>0||free.length>0||list.some(s=>state.jobs.some(j=>j.linkId===s.id));
   const cols=(mode.canEdit?1:0)+(showPeople?5:3);
@@ -2267,7 +2313,7 @@ function sheetXml(rows){
 }
 function buildXlsx(){
   const leadRows=[["區域","地點","負責人","需求人數","已指派人數","狀態"],...ROOMS.filter(r=>r.lead).map(r=>[r.name,r.place,(state.leads[r.k]||"").trim(),leadNeed(r.k),names(state.leads[r.k]).length,state.leadStatus[r.k]||STATUS[0]])];
-  const sheets=[{name:"負責人總覽",rows:leadRows},{name:"工作",rows:jobRows()},{name:"待辦",rows:[["事項","負責人","期限","狀態","備註"],...[...state.todos].sort((a,b)=>Number(a.done)-Number(b.done)||(a.due||"9999").localeCompare(b.due||"9999")).map(x=>[x.title,x.people.trim(),x.due,x.done?"已完成":"未完成",x.note])]},...(state.noteList.length?[{name:"備註",rows:[["#","備註","更新時間"],...state.noteList.map((n,i)=>[String(i+1),n.text,n.at?fmtTime(n.at):""])]}]:[]),{name:"總表",rows:flatRows()},...ROOMS.map(r=>({name:r.name,rows:roomRows(r)})),{name:"人員工作單",rows:peopleRows()}];
+  const sheets=[{name:"負責人總覽",rows:leadRows},{name:"工作",rows:jobRows()},{name:"待辦",rows:[["事項","負責人","期限","狀態","備註"],...[...state.todos].sort((a,b)=>Number(a.done)-Number(b.done)||(a.due||"9999").localeCompare(b.due||"9999")).map(x=>[x.title,x.people.trim(),x.due,x.done?"已完成":"未完成",x.note])]},...(state.noteList.length||ROOMS.some(r=>(state.roomNotes[r.k]||[]).length)?[{name:"備註",rows:[["區域","#","備註","更新時間"],...state.noteList.map((n,i)=>["全體",String(i+1),n.text,n.at?fmtTime(n.at):""]),...ROOMS.flatMap(r=>(state.roomNotes[r.k]||[]).map((n,i)=>[r.name,String(i+1),n.text,n.at?fmtTime(n.at):""]))]}]:[]),{name:"總表",rows:flatRows()},...ROOMS.map(r=>({name:r.name,rows:roomRows(r)})),{name:"人員工作單",rows:peopleRows()}];
   const seen=new Set();
   sheets.forEach(s=>{
     const base=(String(s.name).replace(/[\[\]:*?\/\\]/g," ").trim()||"工作表").slice(0,28);let n=base,c=2;
@@ -2403,6 +2449,7 @@ function diffLines(local,remote){
     else if(r.text!==x.text)out.push("備註「"+cut(x.text)+"」內容不同");
   }
   if(local.noteList.length===remote.noteList.length&&local.noteList.every(x=>rn.has(x.id))&&local.noteList.map(x=>x.id).join()!==remote.noteList.map(x=>x.id).join())out.push("備註順序不同");
+  for(const r of ROOMS)if(JSON.stringify(local.roomNotes[r.k]||[])!==JSON.stringify(remote.roomNotes[r.k]||[]))out.push("「"+r.name+"」的備註不同");
   if(JSON.stringify(local.areas)!==JSON.stringify(remote.areas)||JSON.stringify(local.areaOverrides)!==JSON.stringify(remote.areaOverrides))out.push("區域設定不同");
   if(!out.length)out.push("通知狀態或人員組別不同");
   return out;
