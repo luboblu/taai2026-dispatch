@@ -709,15 +709,15 @@ const PRESET=[
 ["reg","d1","08:00","17:00","報到",""],["all","d1","10:20","10:40","茶敘",""],["all","d1","12:00","13:00","午餐",""],["all","d1","14:20","14:40","茶敘",""],
 ["main","d1","09:20","09:30","開幕典禮",""],
 ["main","d1","09:30","10:20","主題演講 I","Prof. Philip S. Yu · 美國伊利諾大學芝加哥分校"],
-["main","d1","10:40","12:00","國科會智慧計算學門","中堅躍升研究計畫口頭報告"],
-["main","d1","13:00","14:20","特別場次 1",""],["main","d1","14:40","16:00","專題教學",""],
-["main","d1","16:00","16:50","主題演講 II","曹昱 研究員 · 中央研究院"],
-["main","d1","16:50","17:40","國際座談","主題演講講者參與"],
+["main","d1","10:40","12:00","產業軌道 1",""],
+["main","d1","13:00","14:20","產業軌道 2",""],["main","d1","14:40","16:00","專題教學",""],
+["main","d1","16:10","17:00","主題演講 II","曹昱 研究員 · 中央研究院"],
+["main","d1","17:00","17:50","國際座談","主題演講講者參與"],
 ["main","d1","18:00","20:00","歡迎晚宴","公布論文獎"],
 ["A","d1","10:40","12:00","國際口頭場次 1","IO1"],["A","d1","13:00","14:20","國際口頭場次 2","IO2"],["A","d1","14:40","16:00","國際口頭場次 3","IO3"],
 ["B","d1","10:40","12:00","國內口頭場次 1","DO1"],["B","d1","13:00","14:20","國內口頭場次 2","DO2"],["B","d1","14:40","16:00","國內口頭場次 3","DO3"],
 ["C","d1","10:40","12:00","AI CUP 場次",""],["C","d1","13:00","14:20","跨域 AI 永續創新 場次 1",""],["C","d1","14:40","16:00","跨域 AI 永續創新 場次 2",""],
-["D","d1","10:40","12:00","產業軌道 1",""],["D","d1","12:00","13:00","TAAI 會員大會與理監事會",""],["D","d1","13:00","14:20","產業軌道 2",""],["D","d1","14:40","16:00","TAAI 碩博士論文獎口頭報告",""],
+["D","d1","10:40","12:00","國科會智慧計算學門","中堅躍升研究計畫口頭報告"],["D","d1","12:00","13:00","TAAI 會員大會與理監事會",""],["D","d1","13:00","14:20","特別場次 1",""],["D","d1","14:40","16:00","TAAI 碩博士論文獎口頭報告",""],
 ["P","d1","10:40","12:00","海報場次 1","PS1 · 國際"],["P","d1","13:00","14:20","海報場次 2","PS2 · 國內"],["P","d1","14:40","16:00","海報場次 3","PS3 · 國際"],
 ["reg","d2","08:00","17:00","報到",""],["all","d2","09:50","10:10","茶敘",""],["all","d2","12:00","13:00","午餐",""],["all","d2","14:20","14:40","茶敘",""],
 ["main","d2","09:00","09:50","主題演講 III","Prof. Ljiljana Trajkovic · 加拿大西門菲莎大學"],
@@ -2476,6 +2476,7 @@ async function loadHosted(){
   }
   render();
   if(conflict)openConflict("load",state,conflict);
+  else applyAgendaFix();
 }
 async function pollRemote(){
   if(mode.publishing||mode.pendingLocal)return;
@@ -2491,6 +2492,27 @@ async function pollRemote(){
     mode.remoteNewer=true;
     toast("線上有較新的版本，發布時會請你確認。");
   }
+}
+// 2026-11-06 依官網議程修正第 1 天：大會廳與會議室 D 兩個時段對調，主題演講 II、國際座談延後 10 分鐘。
+// 每組只在內容完全符合舊值時才改；對調的兩場必須同時符合。每個瀏覽器只套用一次，按復原後不會再套用。
+const AGENDA_FIX_KEY=KEY+"-fix-1106";
+const AGENDA_FIX=[
+  [["s6","main","10:40","國科會智慧計算學門",{title:"產業軌道 1",sub:""}],["s21","D","10:40","產業軌道 1",{title:"國科會智慧計算學門",sub:"中堅躍升研究計畫口頭報告"}]],
+  [["s7","main","13:00","特別場次 1",{title:"產業軌道 2",sub:""}],["s23","D","13:00","產業軌道 2",{title:"特別場次 1",sub:""}]],
+  [["s9","main","16:00","主題演講 II",{start:"16:10",end:"17:00"}]],
+  [["s10","main","16:50","國際座談",{start:"17:00",end:"17:50"}]]
+];
+function applyAgendaFix(){
+  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal||document.querySelector("dialog[open]"))return;
+  try{if(localStorage.getItem(AGENDA_FIX_KEY))return;localStorage.setItem(AGENDA_FIX_KEY,"1")}catch(e){return}
+  const find=([id,room,start,title])=>state.sessions.find(x=>x.id===id&&x.room===room&&x.day==="d1"&&x.start===start&&x.title===title);
+  const groups=AGENDA_FIX.filter(g=>g.every(find));
+  if(!groups.length)return;
+  const before=JSON.stringify(state);
+  const plan=groups.flatMap(g=>g.map(c=>[find(c),c[4]]));
+  for(const [x,change] of plan)Object.assign(x,change);
+  save();refresh();
+  toast("已依官網議程更新第 1 天 "+plan.length+" 個場次，按「發布」後大家才看得到。",undoFrom(before));
 }
 async function boot(){
   if(!REPO)return;
