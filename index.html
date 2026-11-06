@@ -418,7 +418,9 @@ main:focus{outline:0}
 .board-days{display:grid;gap:18px;min-width:0}
 .board-day{min-width:0}
 .board-wrap{border:1px solid var(--line);border-radius:0 0 7px 7px;border-top:0;overflow:auto;max-height:calc(100vh - 176px);background:var(--bg)}
-.board-grid{display:grid;grid-template-columns:54px repeat(var(--lanes),minmax(0,1fr));grid-template-rows:auto repeat(var(--rows),minmax(24px,auto));min-width:calc(54px + var(--lanes) * 118px)}
+/* 總表用滿整個內容寬度；每欄最窄 88px，一般筆電不用左右捲動 */
+body.view-board main{max-width:none}
+.board-grid{display:grid;grid-template-columns:minmax(52px,max-content) repeat(var(--lanes),minmax(0,1fr));grid-template-rows:auto repeat(var(--rows),minmax(24px,auto));min-width:calc(56px + var(--lanes) * 88px)}
 .b-corner,.b-head{position:sticky;top:0;z-index:3;background:var(--surface2);border-bottom:1px solid var(--line);padding:6px 8px;font-size:.7812rem;grid-row:1}
 .b-corner{left:0;z-index:4;grid-column:1;color:var(--muted);font-weight:500}
 .b-head{border-left:1px solid var(--line);font-weight:600}
@@ -1638,7 +1640,7 @@ function render(){
     return;
   }
   rendering=true;
-  $("agendaPane").hidden=ui.view!=="agenda";document.body.classList.toggle("view-agenda",ui.view==="agenda");
+  $("agendaPane").hidden=ui.view!=="agenda";document.body.classList.toggle("view-agenda",ui.view==="agenda");document.body.classList.toggle("view-board",ui.view==="board");
   try{
     renderTabs();
     if(ui.view==="board")renderBoard();
