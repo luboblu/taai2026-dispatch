@@ -2525,7 +2525,7 @@ async function loadHosted(){
   }
   render();
   if(conflict)openConflict("load",state,conflict);
-  else applyAgendaFix();
+  else if(!applyAgendaFix())applyStaffPlan();
 }
 async function pollRemote(){
   if(mode.publishing||mode.pendingLocal)return;
@@ -2552,16 +2552,48 @@ const AGENDA_FIX=[
   [["s10","main","16:50","國際座談",{start:"17:00",end:"17:50"}]]
 ];
 function applyAgendaFix(){
-  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal||document.querySelector("dialog[open]"))return;
-  try{if(localStorage.getItem(AGENDA_FIX_KEY))return;localStorage.setItem(AGENDA_FIX_KEY,"1")}catch(e){return}
+  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal||document.querySelector("dialog[open]"))return false;
+  try{if(localStorage.getItem(AGENDA_FIX_KEY))return false;localStorage.setItem(AGENDA_FIX_KEY,"1")}catch(e){return false}
   const find=([id,room,start,title])=>state.sessions.find(x=>x.id===id&&x.room===room&&x.day==="d1"&&x.start===start&&x.title===title);
   const groups=AGENDA_FIX.filter(g=>g.every(find));
-  if(!groups.length)return;
+  if(!groups.length)return false;
   const before=JSON.stringify(state);
   const plan=groups.flatMap(g=>g.map(c=>[find(c),c[4]]));
   for(const [x,change] of plan)Object.assign(x,change);
   save();refresh();
   toast("已依官網議程更新第 1 天 "+plan.length+" 個場次，按「發布」後大家才看得到。",undoFrom(before));
+  return true;
+}
+// 2026-11-06 分工表（暫定）：大會廳各場次負責人、報到國內／國際組、場地佈置，
+// 以及大會廳、會議室 A～D、海報區每場各兩位學生協助（資管所、國際學院）的欄位。
+// 只補空白的地方，不覆蓋已填的人；每個瀏覽器只套用一次，按復原後不會再套用。
+const STAFF_PLAN_KEY=KEY+"-plan-1106";
+function applyStaffPlan(){
+  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal||document.querySelector("dialog[open]"))return false;
+  try{if(localStorage.getItem(STAFF_PLAN_KEY))return false;localStorage.setItem(STAFF_PLAN_KEY,"1")}catch(e){return false}
+  const before=JSON.stringify(state),S="學生（資管所）",I="學生（國際學院）";
+  let n=0;
+  const addRoles=(k,list)=>{
+    const rs=state.roles[k]=state.roles[k]||[];
+    for(const name of list)if(!rs.some(r=>r.name===name)){rs.push({id:"r"+(state.nextId++),name});n++}
+    return rs;
+  };
+  const fill=(k,roleName,titles,people)=>{
+    const r=(state.roles[k]||[]).find(x=>x.name===roleName);if(!r)return;
+    for(const x of state.sessions)if(x.room===k&&titles.includes(x.title)&&!names(x.assign[r.id]).length&&!isNA(x.assign[r.id])){x.assign[r.id]=people;n++}
+  };
+  addRoles("main",["場次負責人",S,I]);
+  for(const k of ["A","B","C","D","P"])addRoles(k,[S,I]);
+  addRoles("reg",["國內組","國際組"]);
+  fill("main","場次負責人",["開幕典禮","歡迎晚宴","閉幕典禮與頒獎"],"陳思因、侯惠晏");
+  fill("main","場次負責人",["主題演講 I","主題演講 II","主題演講 III","主題演講 IV","國際座談"],"葉育瑜");
+  fill("reg","國內組",["報到"],"藺宇昕");
+  fill("reg","國際組",["報到"],"元熏");
+  if(!state.todos.some(t=>t.title==="場地佈置")){state.todos.push({id:"t"+(state.nextId++),title:"場地佈置",people:"徐勻庭",due:"",note:"",done:false});n++}
+  if(!n)return false;
+  save();refresh();
+  toast("已依分工表填入大會廳場次負責人、報到國內／國際組、場地佈置，並在各廳加上兩位學生協助的欄位。按「發布」後大家才看得到。",undoFrom(before));
+  return true;
 }
 async function boot(){
   if(!REPO)return;
