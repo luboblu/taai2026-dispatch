@@ -244,6 +244,18 @@ dialog h2{font-size:.9375rem;font-weight:600}
 .role-row input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--control);border-radius:6px;padding:4px 9px}
 .stack{display:grid;gap:8px}
 
+/* 總表與人員 */
+.board-grid .b-item,.board-pre .b-item,.l-group .b-item{background:var(--bg);border-left:3px solid var(--hue,var(--line2));box-shadow:var(--shadow)}
+.board-grid .b-item.live,.l-group .b-item.live{background:var(--selected)}
+.b-gap{font-size:.75rem}
+.me-toggle{min-height:28px;padding:2px 10px;border-radius:999px;font-weight:400}
+.me-toggle.on{background:var(--primary);border-color:var(--primary);color:var(--primary-fg);font-weight:600}
+.person-name{display:flex;align-items:center;gap:9px;min-width:0}
+.avatar{flex:none;width:1.75rem;height:1.75rem;border-radius:50%;display:inline-grid;place-items:center;font-size:.8125rem;font-weight:600;color:var(--hue);background:color-mix(in srgb,var(--hue) 14%,var(--bg))}
+.me-tag{flex:none;padding:0 7px;border-radius:999px;font-size:.6875rem;font-weight:600;background:var(--primary);color:var(--primary-fg)}
+.person summary{min-height:46px}
+@media (prefers-color-scheme:dark){.avatar{color:color-mix(in srgb,var(--hue) 55%,#fff)}}
+
 /* 總覽 */
 .hero{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center;justify-content:space-between;padding:18px 20px;border:1px solid var(--line);border-radius:12px;background:var(--hero)}
 .hero-main{display:grid;gap:4px;min-width:0}
@@ -462,7 +474,7 @@ body.view-board main{max-width:none}
 .board-grid{display:grid;grid-template-columns:minmax(52px,max-content) repeat(var(--lanes),minmax(0,1fr));grid-template-rows:auto repeat(var(--rows),minmax(24px,auto));min-width:calc(56px + var(--lanes) * 88px)}
 .b-corner,.b-head{position:sticky;top:0;z-index:3;background:var(--surface2);border-bottom:1px solid var(--line);padding:6px 8px;font-size:.7812rem;grid-row:1}
 .b-corner{left:0;z-index:4;grid-column:1;color:var(--muted);font-weight:500}
-.b-head{border-left:1px solid var(--line);font-weight:600}
+.b-head{border-left:1px solid var(--line);font-weight:600;box-shadow:inset 0 3px 0 var(--hue,transparent)}
 .b-head a{color:inherit;text-decoration:none}
 .b-head a:hover{text-decoration:underline;text-underline-offset:2px}
 .b-head small{display:block;font-weight:400;font-size:.75rem;color:var(--muted);overflow-wrap:anywhere}
@@ -500,7 +512,9 @@ body.view-board main{max-width:none}
   :root{--bg:#fff;--side:#fff;--surface2:#f1f2f3;--hover:#fff;--line:#b9bec4;--line2:#8d949b;--fg:#000;--muted:#444;--ink:#000;--ink-fg:#fff;--accent:#000;--warn:#7a4f00;--bad:#a01010;--good:#0c5c2f;--selected:#fff;--neutral:#777;color-scheme:light}
   html,body{background:#fff}
   html{font-size:100%!important}
-  .agenda-pane,.side-ext,.me-card,.hero-when{display:none!important}
+  .agenda-pane,.side-ext,.me-card,.hero-when,.avatar,.me-tag,.me-toggle{display:none!important}
+  .board-grid .b-item{box-shadow:none}
+  .b-gap{display:none!important}
   .hero{background:none;border:0;padding:0}
   body{font-size:10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   a{color:inherit}
@@ -1173,12 +1187,20 @@ function boardLineHtml(l){
   const tag=l.need>1?' <span class="'+(short?"short":"")+'">'+l.people.length+"/"+l.need+"</span>":"";
   return '<span class="b-person"><span class="b-label">'+esc(l.label)+"</span> "+(who||'<span class="short">未指派</span>')+tag+"</span>";
 }
+// 已指派的職務各列一行；還沒指派的合併成「缺 N 人」，滑過去看得到是哪些職務
+function boardLinesHtml(lines){
+  const open=lines.filter(l=>!l.people.length),gap=open.reduce((a,l)=>a+l.need,0);
+  return lines.filter(l=>l.people.length).map(boardLineHtml).join("")+(gap?'<span class="b-person b-gap" title="'+esc(open.map(l=>l.label).join("、"))+'"><span class="short">缺 '+gap+" 人</span></span>":"");
+}
+const ROOM_HUES=["#0d4a9e","#4a90e2","#1f7a86","#2f7a3a","#7bb93f","#6e56b4","#b85c3a","#e8a838","#8a6d3b","#5b6770"];
+function roomHue(k){const i=ROOMS.findIndex(r=>r.k===k);return ROOM_HUES[(i<0?0:i)%ROOM_HUES.length]}
 function boardItemHtml(it,day,now,style){
   const cls=boardItemState(it,day,now),people=it.lines.flatMap(l=>l.people);
+  style=(style?style+";":"")+"--hue:"+roomHue(it.room);
   return '<a class="b-item'+cls+'" href="#room-'+esc(it.room)+'"'+(style?' style="'+style+'"':"")+' data-people="'+boardPeopleAttr(people)+'"><span class="b-title">'+esc(it.title)+"</span>"
     +'<span class="b-when">'+esc(it.start)+"–"+esc(it.end)+(cls===" live"?' <b class="b-live">進行中</b>':"")+"</span>"
     +(it.sub?'<span class="b-sub">'+esc(it.sub)+"</span>":"")
-    +it.lines.map(boardLineHtml).join("")+"</a>";
+    +boardLinesHtml(it.lines)+"</a>";
 }
 function boardLeadHtml(r){
   if(!r.lead)return "";
@@ -1192,7 +1214,7 @@ function boardGridHtml(items,day,now){
   let h='<div class="board-wrap" tabindex="0" role="region" aria-label="'+esc(dayOf(day).short)+' 現場總表"><div class="board-grid" style="--lanes:'+L.lanes+";--rows:"+rows+'"><div class="b-corner">時間</div>';
   for(const x of L.heads){
     const lead=x.r.lead?names(state.leads[x.r.k]):[];
-    h+='<div class="b-head" style="grid-column:'+x.col+" / span "+x.span+'" data-people="'+boardPeopleAttr(lead)+'"><a href="#room-'+esc(x.r.k)+'">'+esc(x.r.name)+"</a>"+boardLeadHtml(x.r)+"</div>";
+    h+='<div class="b-head" style="grid-column:'+x.col+" / span "+x.span+";--hue:"+roomHue(x.r.k)+'" data-people="'+boardPeopleAttr(lead)+'"><a href="#room-'+esc(x.r.k)+'">'+esc(x.r.name)+"</a>"+boardLeadHtml(x.r)+"</div>";
   }
   for(let i=0;i<rows;i++){
     const on=liveDay&&L.times[i]<=now.time&&now.time<L.times[i+1];
@@ -1226,7 +1248,7 @@ function renderBoard(){
     h+='<p class="now-strip no-print">現在 '+esc(now.time)+"（臺北時間） · 進行中 "+live+" 個場次</p>";
   }
   const tab=(k,l)=>'<button type="button" data-boardday="'+k+'" class="'+(ui.boardDay===k?"on":"")+'">'+l+"</button>";
-  h+='<div class="toolbar no-print"><div class="subtabs" role="group" aria-label="選擇日期">'+tab("d1","11/20（五）")+tab("d2","11/21（六）")+tab("all","兩天")+'</div><div class="board-find"><span class="counter" id="boardHits"></span><input id="boardPerson" type="search" list="peopleList" autocomplete="off" aria-label="找人員" placeholder="找人員" value="'+esc(ui.boardPerson)+'"></div></div>';
+  h+='<div class="toolbar no-print"><div class="subtabs" role="group" aria-label="選擇日期">'+tab("d1","11/20（五）")+tab("d2","11/21（六）")+tab("all","兩天")+'</div><div class="board-find"><span class="counter" id="boardHits"></span>'+(ui.me&&CTX.tasks.has(ui.me)?'<button type="button" class="me-toggle'+(ui.boardPerson===ui.me?" on":"")+'" data-boardme="1" aria-pressed="'+(ui.boardPerson===ui.me)+'">只看我的</button>':"")+'<input id="boardPerson" type="search" list="peopleList" autocomplete="off" aria-label="找人員" placeholder="找人員" value="'+esc(ui.boardPerson)+'"></div></div>';
   const when=state.updatedAt?"資料更新 "+fmtTime(state.updatedAt):"";
   h+='<div class="board-days">';
   for(const d of days){
@@ -1650,7 +1672,7 @@ function renderPeople(){
     if(key==="count")return dir*(a.list.length-b.list.length)||name(a,b);
     if(key==="hours")return dir*(a.mins-b.mins)||name(a,b);
     if(key==="todo")return dir*(a.todos.length-b.todos.length)||name(a,b);
-    return (b.cf?1:0)-(a.cf?1:0)||name(a,b);
+    return (b.n===ui.me?1:0)-(a.n===ui.me?1:0)||(b.cf?1:0)-(a.cf?1:0)||name(a,b);
   });
   let h=banners()+'<div class="page-head no-print"><h1 tabindex="-1">人員</h1><span class="page-sub">'+total+' 人</span><span class="spacer"></span><button type="button" data-print="1">列印工作單</button></div><p class="print-title print-only"><b>TAAI 2026 個人工作單</b><span>'+esc(state.updatedAt?"資料更新 "+fmtTime(state.updatedAt):"")+"</span></p>";
   if(mode.canEdit)h+='<section class="add-people"><textarea id="bulk" rows="1" aria-label="新增人員" placeholder="新增人員，多人用頓號或換行分開"></textarea><button type="button" id="bulkAdd">新增</button></section>';
@@ -1668,7 +1690,7 @@ function renderPeople(){
   const q=ui.peopleQ.trim().toLowerCase();
   rows.forEach((r,i)=>{
     const {n,list,info,cf,todos,mins}=r,search=(n+" "+(info.group||"")).toLowerCase();
-    h+='<details class="person'+(list.length||todos.length?"":" no-task")+'" data-person="'+esc(n)+'" data-search="'+esc(search)+'"'+(ui.openPeople.has(n)?" open":"")+(q&&!search.includes(q)?" hidden":"")+'><summary><span class="person-name">'+esc(n)+'</span><span class="person-group">'+esc(info.group||"")+'</span><span class="person-num">'+(list.length||"")+'</span><span class="person-num person-hours">'+fmtHours(mins)+'</span><span class="person-num person-todo">'+(todos.length||"")+'</span><span class="person-flag">'+(cf?'<span class="tag-bad">時段重疊</span>':"")+"</span>"+ICON.next+'</summary><div class="body">';
+    h+='<details class="person'+(list.length||todos.length?"":" no-task")+'" data-person="'+esc(n)+'" data-search="'+esc(search)+'"'+(ui.openPeople.has(n)?" open":"")+(q&&!search.includes(q)?" hidden":"")+'><summary><span class="person-name"><span class="avatar" aria-hidden="true" style="--hue:'+ROOM_HUES[[...n].reduce((a,c)=>a+c.codePointAt(0),0)%8]+'">'+esc([...n].slice(-1)[0]||"")+"</span>"+esc(n)+(n===ui.me?'<span class="me-tag">我</span>':"")+'</span><span class="person-group">'+esc(info.group||"")+'</span><span class="person-num">'+(list.length||"")+'</span><span class="person-num person-hours">'+fmtHours(mins)+'</span><span class="person-num person-todo">'+(todos.length||"")+'</span><span class="person-flag">'+(cf?'<span class="tag-bad">時段重疊</span>':"")+"</span>"+ICON.next+'</summary><div class="body">';
     if(mode.canEdit)h+='<div class="fields"><label>姓名<input id="pname-'+i+'" data-rename="'+esc(n)+'" value="'+esc(n)+'"></label><label>組別<input id="pgroup-'+i+'" data-pinfo="group" data-p="'+esc(n)+'" value="'+esc(info.group||"")+'"></label><label>聯絡方式'+(mode.hosted?"（不會發布）":"")+'<input id="pcontact-'+i+'" data-pinfo="contact" data-p="'+esc(n)+'" value="'+esc(info.contact||"")+'"></label></div>';
     h+=list.length?personTasksHtml(list,cf):(todos.length?"":'<p class="tip">還沒有分配工作。</p>');
     if(todos.length)h+='<div class="day-tasks"><div class="day-label">籌備待辦</div><ul class="tasks">'+todos.map(t=>'<li><span class="t">'+(t.due?esc(fmtDue(t.due)):"未定期限")+"</span><span>"+esc(t.title)+"</span></li>").join("")+"</ul></div>";
@@ -1973,6 +1995,7 @@ $("main").addEventListener("click",e=>{
   if(d.peoplefilter){ui.peopleFilter=d.peoplefilter;refresh();return}
   if(d.todofilter){ui.todoFilter=d.todofilter;refresh();return}
   if(d.edittodo){openTodo(d.edittodo);return}
+  if(d.boardme){ui.boardPerson=ui.boardPerson===ui.me?"":ui.me;refresh();return}
   if(d.meClear){ui.me="";try{localStorage.removeItem(ME_KEY)}catch(err){}refresh();const m=$("meSel");if(m)m.focus();return}
   if(d.noteact){noteAction(d.noteact,d.list,d.nid);return}
   if(d.noteaddbtn){const t=$("noteNew-"+d.noteaddbtn);addNote(d.noteaddbtn,t?t.value:"");return}
