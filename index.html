@@ -15,6 +15,7 @@
   --bg:#ffffff;--side:#f6f4ee;--surface2:#f1f4f6;--hover:#f6f8f9;--line:#dfe4e7;--line2:#c5ced3;
   --fg:#0c1f2a;--muted:#45606d;--selected:#eaf2fb;--ink:#0c1f2a;--ink-fg:#ffffff;--accent:#0d4a9e;
   --primary:#0d4a9e;--primary-fg:#ffffff;--brand:linear-gradient(90deg,#0d4a9e,#4a90e2 48%,#7bb93f);
+  --hue-0:#0d4a9e;--hue-1:#4a90e2;--hue-2:#1f7a86;--hue-3:#2f7a3a;--hue-4:#7bb93f;--hue-5:#6e56b4;--hue-6:#b85c3a;--hue-7:#e8a838;--hue-8:#8a6d3b;--hue-9:#5b6770;
   --shadow:0 1px 2px rgba(12,31,42,.05);--hero:linear-gradient(120deg,#eaf2fb 0%,#f6f4ee 58%,#e9f2e2 100%);
   --warn:#8f5d00;--bad:#b42318;--good:#2f7a3a;--neutral:#7d8d95;--control:#7f8f98;--stick:48px;--toph:44px;--fz:1.143;
   --sans:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei","Segoe UI",sans-serif;
@@ -514,7 +515,9 @@ body.view-board main{max-width:none}
   html{font-size:100%!important}
   .agenda-pane,.side-ext,.me-card,.hero-when,.avatar,.me-tag,.me-toggle{display:none!important}
   .board-grid .b-item{box-shadow:none}
-  .b-gap{display:none!important}
+  .b-item{position:relative}
+  .b-gap{position:absolute;right:2px;top:1px;margin:0;font-size:inherit}
+  .b-item:has(.b-gap) .b-title{padding-right:3.8em}
   .hero{background:none;border:0;padding:0}
   body{font-size:10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   a{color:inherit}
@@ -1192,7 +1195,8 @@ function boardLinesHtml(lines){
   const open=lines.filter(l=>!l.people.length),gap=open.reduce((a,l)=>a+l.need,0);
   return lines.filter(l=>l.people.length).map(boardLineHtml).join("")+(gap?'<span class="b-person b-gap" title="'+esc(open.map(l=>l.label).join("、"))+'"><span class="short">缺 '+gap+" 人</span></span>":"");
 }
-const ROOM_HUES=["#0d4a9e","#4a90e2","#1f7a86","#2f7a3a","#7bb93f","#6e56b4","#b85c3a","#e8a838","#8a6d3b","#5b6770"];
+// 區域識別色定義在 :root 的 --hue-0 … --hue-9
+const ROOM_HUES=[0,1,2,3,4,5,6,7,8,9].map(i=>"var(--hue-"+i+")");
 function roomHue(k){const i=ROOMS.findIndex(r=>r.k===k);return ROOM_HUES[(i<0?0:i)%ROOM_HUES.length]}
 function boardItemHtml(it,day,now,style){
   const cls=boardItemState(it,day,now),people=it.lines.flatMap(l=>l.people);
