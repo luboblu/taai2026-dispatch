@@ -1484,7 +1484,7 @@ function renderRoomBody(){
           +(showPeople?'<td class="c-people">'+(one?chipsHtml("assign",s.id,one.id,s.title+" "+one.name):"")+"</td>"
           +'<td class="c-status">'+(roles.length?statusHtml("session",s.id,s.status,has):"")+"</td>":"")
           +'<td class="c-act">'+(mode.canEdit?'<button type="button" class="ghost row-act" data-addjob="1" data-link="'+esc(s.id)+'">新增工作</button>'+editBtn("data-edit",s.id):"")+"</td></tr>";
-        if(roles.length>1)for(const r of roles)h+='<tr class="sub">'+blankCheck+'<td class="c-time"></td><th scope=row class="c-title"><b>'+esc(r.name)+'</b></th><td class="c-people">'+chipsHtml("assign",s.id,r.id,s.title+" "+r.name)+'</td><td class="c-status"></td><td class="c-act"></td></tr>';
+        if(roles.length>1)for(const r of roles){if(!mode.canEdit&&!names(s.assign[r.id]).length)continue;h+='<tr class="sub">'+blankCheck+'<td class="c-time"></td><th scope=row class="c-title"><b>'+esc(r.name)+'</b></th><td class="c-people">'+chipsHtml("assign",s.id,r.id,s.title+" "+r.name)+'</td><td class="c-status"></td><td class="c-act"></td></tr>';}
         h+=state.jobs.filter(j=>j.linkId===s.id).map(subJob).join("");
       }
       h+="</tbody>";
