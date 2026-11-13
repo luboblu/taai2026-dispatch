@@ -8,7 +8,7 @@
 做的事：
 - 把 index.html、data.json 複製到 .test/（已列在 .gitignore），
   並把 API 改成本機的 /api、repo 改成 o/r。repo 裡的檔案不會被改到。
-- 開 http://127.0.0.1:8791/index.html ，按「編輯登入」輸入假 token：
+- 開 http://127.0.0.1:8791/index.html ，按「統籌登入」輸入假 token：
     good-token  可以發布
     ro-token    唯讀，發布會失敗（用來測錯誤訊息）
 - 發布只會寫進 .test/data.json。

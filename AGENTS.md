@@ -80,7 +80,7 @@
 python3 tools/mock_server.py
 ```
 
-接著打開 http://127.0.0.1:8791/index.html ，按「編輯登入」輸入假 token `good-token`。這樣可以測發布，資料只會寫進 `.test/data.json`。
+接著打開 http://127.0.0.1:8791/index.html ，按「統籌登入」輸入假 token `good-token`。這樣可以測發布，資料只會寫進 `.test/data.json`。
 
 改完至少確認：
 
