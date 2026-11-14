@@ -865,7 +865,7 @@ function normalize(s){
   syncNotes(s);
   s.jobs=(Array.isArray(s.jobs)?s.jobs:[]).filter(j=>j&&typeof j==="object"&&j.id);
   s.jobs.forEach(j=>{j.title=String(j.title||"");j.people=String(j.people||"");j.note=String(j.note||"");j.need=Math.max(1,parseInt(j.need,10)||1);if(!STATUS.includes(j.status))j.status=STATUS[0]});
-  ROOMS.forEach(r=>{if(!Array.isArray(s.roles[r.k]))s.roles[r.k]=[]});
+  [...BASE_ROOMS,...s.areas].forEach(r=>{if(!Array.isArray(s.roles[r.k]))s.roles[r.k]=[]});
   s.sessions.forEach(x=>{x.assign=x.assign&&typeof x.assign==="object"?x.assign:{};if(!STATUS.includes(x.status))x.status=STATUS[0];x.note=x.note||"";x.sub=x.sub||""});
   return s;
 }
@@ -2616,7 +2616,7 @@ async function loadHosted(){
   }
   render();
   if(conflict)openConflict("load",state,conflict);
-  else if(!applyAgendaFix()&&!applyStaffPlan())applyRoster();
+  else if(!applyAgendaFix()&&!applyStaffPlan()&&!applyRoster())applyDeskArea();
 }
 async function pollRemote(){
   if(mode.publishing||mode.pendingLocal)return;
@@ -2724,6 +2724,26 @@ function applyRoster(){
   if(!n)return false;
   save();refresh();
   toast("已依 11/20 國際學生分工名單補上人員，並填入麗景廳、麗泉廳、海報區、報到國際組，新增 1 樓服務臺與 2 樓引導區兩項工作。按「發布」後大家才看得到。",undoFrom(before));
+  return true;
+}
+// 2026-11-14 把「1 樓服務臺」從引導區(一中一英)分出來，放到新的「服務臺」區域（1F）。
+// 只搬標題是「1 樓服務臺」且還在 a1003 的工作；已有叫「服務臺」的區域就沿用。每個瀏覽器只套用一次，可復原。
+const DESK_KEY=KEY+"-desk-1114";
+function applyDeskArea(){
+  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal||document.querySelector("dialog[open]"))return false;
+  try{if(localStorage.getItem(DESK_KEY))return false;localStorage.setItem(DESK_KEY,"1")}catch(e){return false}
+  const list=state.jobs.filter(j=>j.title==="1 樓服務臺"&&j.room==="a1003"&&!j.linkId);
+  if(!list.length)return false;
+  const before=JSON.stringify(state);
+  let a=ROOMS.find(r=>r.name==="服務臺");
+  if(!a){
+    const k="a"+(state.nextId++);
+    state.areas.push({k,name:"服務臺",place:"1F"});state.leads[k]="";
+    syncRooms();a=ROOMS.find(r=>r.k===k);
+  }
+  for(const j of list)j.room=a.k;
+  save();refresh();
+  toast("已把「1 樓服務臺」從引導區分出來，放到新的「服務臺」區域。按「發布」後大家才看得到。",undoFrom(before));
   return true;
 }
 async function boot(){
