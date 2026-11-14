@@ -1,6 +1,6 @@
 {
  "v": 2,
- "nextId": 1033,
+ "nextId": 1035,
  "roles": {
   "bus": [
    {
@@ -168,6 +168,32 @@
    "start": null,
    "end": null,
    "need": 1
+  },
+  {
+   "id": "j1033",
+   "status": "未通知",
+   "title": "1 樓服務臺",
+   "linkId": null,
+   "people": "Tran Dieu Thanh Phuong (Louise)",
+   "need": 1,
+   "note": "時間待確認",
+   "room": "a1003",
+   "day": "d1",
+   "start": "08:00",
+   "end": "17:00"
+  },
+  {
+   "id": "j1034",
+   "status": "未通知",
+   "title": "2 樓引導區",
+   "linkId": null,
+   "people": "Nguyen Thi Kim Hong (Pinkie)、Athar Alimmudin (Athar)、Lam Bao Vy (Vivian)",
+   "need": 3,
+   "note": "時間待確認；名單上 Vivian 標有 *",
+   "room": "a1003",
+   "day": "d1",
+   "start": "08:00",
+   "end": "17:00"
   }
  ],
  "notes": "開幕典禮長官席是否需要特別安排以及誰要上台致詞\n\n五組筆電 投影筆 轉接頭 簡報筆 5+1組\n\n第一天 有個國外講者線上進行  需要用會議連結 美國習慣用zoom\n\nAi cup玉山盃在第一天早上\n\n一廳派一個工讀小弟\n\nAndy在會議室D協助花生\n\n有名單要給各組會議廳負責人 因為有些學生報告方式不一樣\n\n晚宴也需要人手 收餐券帶入席 (三位)\n\n晚宴要司儀 開幕閉幕晚宴司儀可以同一位\n\n當天會印論文獎獎狀 論文發表獎\n\n會議廳 AB海報區 發評分表發錢\n\n各場次分組拍照上傳\n\n各廳負責人 AB海報區 要印簽到表\n\n各廳負責人拍照部分確認發表者有來 如果團體照主持人有要求再拍",
@@ -263,7 +289,7 @@
    "sub": "",
    "assign": {
     "r1019": "藺宇昕、彭紹傑",
-    "r1020": "Nguyen Ming Hang (Alice)、Puvanut Jhuntain (Dodo)、Pham Ngoc Thanh Vy (Vy)"
+    "r1020": "Nguyen Minh Hang (Alice)、Puvanut Jhuntain (Dodo)、Pham Ngoc Thanh Vy (Vy)"
    },
    "status": "未通知",
    "note": ""
@@ -418,7 +444,9 @@
    "end": "12:00",
    "title": "國際口頭場次 1",
    "sub": "IO1",
-   "assign": {},
+   "assign": {
+    "r1010": "Dinh Thi My Hanh (Hana)、Aido Luthfi Al Hakim (Aido)"
+   },
    "status": "未通知",
    "note": ""
   },
@@ -430,7 +458,9 @@
    "end": "14:20",
    "title": "國際口頭場次 2",
    "sub": "IO2",
-   "assign": {},
+   "assign": {
+    "r1010": "Dinh Thi My Hanh (Hana)、Aido Luthfi Al Hakim (Aido)"
+   },
    "status": "未通知",
    "note": ""
   },
@@ -442,7 +472,9 @@
    "end": "16:00",
    "title": "國際口頭場次 3",
    "sub": "IO3",
-   "assign": {},
+   "assign": {
+    "r1010": "Dinh Thi My Hanh (Hana)、Aido Luthfi Al Hakim (Aido)"
+   },
    "status": "未通知",
    "note": ""
   },
@@ -490,7 +522,9 @@
    "end": "12:00",
    "title": "AI CUP 場次",
    "sub": "",
-   "assign": {},
+   "assign": {
+    "r1014": "Vo Vinh Truong (Vinton)"
+   },
    "status": "未通知",
    "note": ""
   },
@@ -502,7 +536,9 @@
    "end": "14:20",
    "title": "跨域 AI 永續創新 場次 1",
    "sub": "",
-   "assign": {},
+   "assign": {
+    "r1014": "Vo Vinh Truong (Vinton)"
+   },
    "status": "未通知",
    "note": ""
   },
@@ -514,7 +550,9 @@
    "end": "16:00",
    "title": "跨域 AI 永續創新 場次 2",
    "sub": "",
-   "assign": {},
+   "assign": {
+    "r1014": "Vo Vinh Truong (Vinton)"
+   },
    "status": "未通知",
    "note": ""
   },
@@ -574,7 +612,9 @@
    "end": "12:00",
    "title": "海報場次 1",
    "sub": "PS1 · 國際",
-   "assign": {},
+   "assign": {
+    "r1018": "Najeeb Ullah (Najeeb)"
+   },
    "status": "未通知",
    "note": ""
   },
@@ -586,7 +626,9 @@
    "end": "14:20",
    "title": "海報場次 2",
    "sub": "PS2 · 國內",
-   "assign": {},
+   "assign": {
+    "r1018": "Najeeb Ullah (Najeeb)"
+   },
    "status": "未通知",
    "note": ""
   },
@@ -598,7 +640,9 @@
    "end": "16:00",
    "title": "海報場次 3",
    "sub": "PS3 · 國際",
-   "assign": {},
+   "assign": {
+    "r1018": "Najeeb Ullah (Najeeb)"
+   },
    "status": "未通知",
    "note": ""
   },
@@ -612,7 +656,7 @@
    "sub": "",
    "assign": {
     "r1019": "藺宇昕、彭紹傑",
-    "r1020": "Nguyen Ming Hang (Alice)、Puvanut Jhuntain (Dodo)、Pham Ngoc Thanh Vy (Vy)"
+    "r1020": "Nguyen Minh Hang (Alice)、Puvanut Jhuntain (Dodo)、Pham Ngoc Thanh Vy (Vy)"
    },
    "status": "未通知",
    "note": ""
@@ -1115,9 +1159,17 @@
   "詹元薰": {},
   "曾郁翔": {},
   "Nguyen Ngoc Huyen (Daisy)": {},
-  "Nguyen Ming Hang (Alice)": {},
   "Puvanut Jhuntain (Dodo)": {},
-  "Pham Ngoc Thanh Vy (Vy)": {}
+  "Pham Ngoc Thanh Vy (Vy)": {},
+  "Nguyen Minh Hang (Alice)": {},
+  "Tran Dieu Thanh Phuong (Louise)": {},
+  "Nguyen Thi Kim Hong (Pinkie)": {},
+  "Athar Alimmudin (Athar)": {},
+  "Lam Bao Vy (Vivian)": {},
+  "Dinh Thi My Hanh (Hana)": {},
+  "Aido Luthfi Al Hakim (Aido)": {},
+  "Vo Vinh Truong (Vinton)": {},
+  "Najeeb Ullah (Najeeb)": {}
  },
- "updatedAt": "2026-11-14T14:09:33.817Z"
+ "updatedAt": "2026-11-14T14:20:38.336Z"
 }
