@@ -12,6 +12,7 @@
 <style>
 /* 版面：左側固定導覽，右側是工具列與資料表。中性灰階、細線分隔、小圓角，色彩只用在狀態。 */
 :root{
+  --frame-muted:#57606a;/* 官網議程框固定白底，深色模式也用這個字色 */
   --bg:#ffffff;--side:#f6f4ee;--surface2:#f1f4f6;--hover:#f6f8f9;--line:#dfe4e7;--line2:#c5ced3;
   --fg:#0c1f2a;--muted:#45606d;--selected:#eaf2fb;--ink:#0c1f2a;--ink-fg:#ffffff;--accent:#0d4a9e;
   --primary:#0d4a9e;--primary-fg:#ffffff;--brand:linear-gradient(90deg,#0d4a9e,#4a90e2 48%,#7bb93f);
@@ -323,7 +324,8 @@ dialog h2{font-size:.9375rem;font-weight:600}
 .agenda-jump{display:flex;flex-wrap:wrap;gap:6px}
 .agenda-jump button{border-radius:999px;font-weight:400;padding:3px 12px}
 .agenda-jump button.on{border-color:var(--primary);color:var(--primary);font-weight:600}
-.agenda-pane{padding:0 24px 32px;max-width:1180px;width:100%}
+.agenda-pane{padding:0 24px 32px;max-width:1180px;width:100%;position:relative}
+.agenda-pane.loading::before{content:"正在載入官網議程…";position:absolute;left:24px;right:24px;top:0;padding:28px 16px;text-align:center;color:var(--frame-muted);font-size:.875rem;z-index:1;pointer-events:none}
 .agenda-pane iframe{display:block;width:100%;height:calc(100vh - var(--stick) - 170px);min-height:480px;border:1px solid var(--line);border-radius:10px;background:#fff}
 body.view-agenda main{padding-bottom:14px}
 .ext-link{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line2);border-radius:6px;padding:4px 11px;min-height:30px;font-size:.8125rem;font-weight:500;color:var(--fg);text-decoration:none;white-space:nowrap}
@@ -402,6 +404,7 @@ main:focus{outline:0}
 }
 @media (max-width:760px){
   .agenda-pane{padding:0 16px 24px}
+  .agenda-pane.loading::before{left:16px;right:16px}
   .agenda-pane iframe{height:calc(100vh - var(--stick) - 210px)}
   .tbl,.tbl tbody,.tbl tr,.tbl td,.tbl th{display:block}
   .tbl thead{display:none}
@@ -1455,7 +1458,14 @@ function agendaAnchor(s){
 }
 function showAgendaFrame(at,force){
   const f=$("agendaFrame"),url=AGENDA_URL+(at?"#"+at:"");
-  if(force||f.dataset.url!==url){f.src=url;f.dataset.url=url}
+  if(force||f.dataset.url!==url){
+    // 第一次載入官網要幾秒，先顯示「正在載入」；之後只是換段落，不再顯示
+    if(!f.dataset.url){
+      const pane=$("agendaPane"),done=()=>pane.classList.remove("loading");
+      pane.classList.add("loading");f.addEventListener("load",done,{once:true});setTimeout(done,20000);
+    }
+    f.src=url;f.dataset.url=url;
+  }
 }
 function renderAgenda(){
   const at=ui.agendaAt;
