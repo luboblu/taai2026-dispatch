@@ -755,7 +755,7 @@ const ROOMS=[
   {k:"B",name:"會議室 B",place:"2F 麗景廳 B 廳",lead:true},
   {k:"C",name:"會議室 C",place:"2F 麗泉廳 C1",lead:true},
   {k:"D",name:"會議室 D",place:"7F 高峰廳",lead:true},
-  {k:"P",name:"海報區",place:"5F 麗山廳開放中庭",lead:true},
+  {k:"P",name:"海報區",place:"2F 麗泉廳展示區",lead:true},
   {k:"reg",name:"報到",place:"地點待補",lead:true,noPlace:true},
   {k:"all",name:"茶敘午餐",place:"地點待補",lead:true,noPlace:true},
   {k:"bus",name:"遊覽車",place:"接駁車隨車",noPlace:true}
@@ -2616,7 +2616,7 @@ async function loadHosted(){
   }
   render();
   if(conflict)openConflict("load",state,conflict);
-  else if(!applyAgendaFix()&&!applyStaffPlan()&&!applyRoster())applyDeskArea();
+  else if(!applyAgendaFix()&&!applyStaffPlan()&&!applyRoster()&&!applyDeskArea())applyAgendaFix2();
 }
 async function pollRemote(){
   if(mode.publishing||mode.pendingLocal)return;
@@ -2724,6 +2724,39 @@ function applyRoster(){
   if(!n)return false;
   save();refresh();
   toast("已依 11/20 國際學生分工名單補上人員，並填入麗景廳、麗泉廳、海報區、報到國際組，新增 1 樓服務臺與 2 樓引導區兩項工作。按「發布」後大家才看得到。",undoFrom(before));
+  return true;
+}
+// 2026-11-14 依官網議程更新：第 1 天兩場改名；第 2 天大會廳 10:10–12:00 合併成青年女性之星場次、
+// 會議室 C 10:10–12:00 合併成跨域 AI 永續創新 場次 3、兩場專題教學改名、午餐改午宴。
+// 每組只在時間、名稱、補充說明都完全符合舊值時才改；要刪的場次必須沒有指派、備註、連結的工作，且仍是「未通知」。每個瀏覽器只套用一次，可復原。
+const AGENDA_FIX2_KEY=KEY+"-fix-1114";
+const AGENDA_FIX2=[
+  [["s23","D","d1","13:00","14:20","特別場次 1","",{title:"國科會智慧計算學門",sub:"業務說明與規劃報告"}]],
+  [["s8","main","d1","14:40","16:00","專題教學","",{title:"Agentic AI 專題教學 1"}]],
+  [["s34","main","d2","11:10","12:00","青年女性之星場次","",{start:"10:10",end:"12:00"}],["s33","main","d2","10:10","11:00","特別場次 2","",null]],
+  [["s47","C","d2","10:10","11:00","跨域 AI 場次 1","",{title:"跨域 AI 永續創新 場次 3",end:"12:00"}],["s48","C","d2","11:10","12:00","跨域 AI 場次 2","",null]],
+  [["s35","main","d2","13:00","14:20","國內座談","",{title:"Agentic AI 專題教學 2"}]],
+  [["s36","main","d2","14:40","15:30","特別場次 3","",{title:"Physical AI 專題教學"}]],
+  [["s30","all","d2","12:00","13:00","午餐","",{title:"午宴",sub:"1F 麗池廳"}]]
+];
+function applyAgendaFix2(){
+  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal||document.querySelector("dialog[open]"))return false;
+  try{if(localStorage.getItem(AGENDA_FIX2_KEY))return false;localStorage.setItem(AGENDA_FIX2_KEY,"1")}catch(e){return false}
+  const find=([id,room,day,start,end,title,sub,change])=>{
+    const x=state.sessions.find(y=>y.id===id&&y.room===room&&y.day===day&&y.start===start&&y.end===end&&y.title===title&&String(y.sub||"")===sub);
+    if(!x||change)return x;
+    const empty=!Object.values(x.assign||{}).some(v=>String(v||"").trim())&&!String(x.note||"").trim()&&(x.status||STATUS[0])===STATUS[0]&&!state.jobs.some(j=>j.linkId===id);
+    return empty?x:null;
+  };
+  const groups=AGENDA_FIX2.filter(g=>g.every(find));
+  if(!groups.length)return false;
+  const before=JSON.stringify(state);
+  const plan=groups.flatMap(g=>g.map(c=>[find(c),c[7]]));
+  for(const [x,change] of plan)if(change)Object.assign(x,change);
+  const drop=new Set(plan.filter(p=>!p[1]).map(p=>p[0]));
+  state.sessions=state.sessions.filter(x=>!drop.has(x));
+  save();refresh();
+  toast("已依官網議程更新 "+(plan.length-drop.size)+" 個場次"+(drop.size?"，並合併掉 "+drop.size+" 個空場次":"")+"。按「發布」後大家才看得到。",undoFrom(before));
   return true;
 }
 // 2026-11-14 把「1 樓服務臺」從引導區(一中一英)分出來，放到新的「服務臺」區域（1F）。
