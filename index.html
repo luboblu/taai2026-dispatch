@@ -2729,7 +2729,7 @@ function applyRoster(){
 // 2026-11-14 依官網議程更新：第 1 天兩場改名；第 2 天大會廳 10:10–12:00 合併成青年女性之星場次、
 // 會議室 C 10:10–12:00 合併成跨域 AI 永續創新 場次 3、兩場專題教學改名、午餐改午宴。
 // 每組只在時間、名稱、補充說明都完全符合舊值時才改；要刪的場次必須沒有指派、備註、連結的工作，且仍是「未通知」。每個瀏覽器只套用一次，可復原。
-const AGENDA_FIX2_KEY=KEY+"-fix-1114";
+const AGENDA_FIX2_KEY=KEY+"-fix-1114b";
 const AGENDA_FIX2=[
   [["s23","D","d1","13:00","14:20","特別場次 1","",{title:"國科會智慧計算學門",sub:"業務說明與規劃報告"}]],
   [["s8","main","d1","14:40","16:00","專題教學","",{title:"Agentic AI 專題教學 1"}]],
@@ -2761,7 +2761,8 @@ function applyAgendaFix2(){
 }
 // 2026-11-14 把「1 樓服務臺」從引導區(一中一英)分出來，放到新的「服務臺」區域（1F）。
 // 只搬標題是「1 樓服務臺」且還在 a1003 的工作；已有叫「服務臺」的區域就沿用。每個瀏覽器只套用一次，可復原。
-const DESK_KEY=KEY+"-desk-1114";
+// 記錄鍵 2026-11-14 改名：統籌的瀏覽器裡舊記錄已用掉但改動沒留下，改名讓它再套用一次（只會改仍符合舊值的內容）
+const DESK_KEY=KEY+"-desk-1114b";
 function applyDeskArea(){
   if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal||document.querySelector("dialog[open]"))return false;
   try{if(localStorage.getItem(DESK_KEY))return false;localStorage.setItem(DESK_KEY,"1")}catch(e){return false}
