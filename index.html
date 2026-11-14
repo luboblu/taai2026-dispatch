@@ -1243,7 +1243,9 @@ function boardListHtml(items,day,now){
   let h='<div class="board-list">';
   for(const t of starts){
     h+='<section class="l-group"><h2>'+esc(t)+"</h2>";
-    for(const it of items.filter(i=>i.start===t)){
+    // 同一個開始時間內依區域順序排（大會廳、會議室 A…），不受結束時間影響
+    const ri=k=>ROOMS.findIndex(r=>r.k===k);
+    for(const it of items.filter(i=>i.start===t).sort((a,b)=>ri(a.room)-ri(b.room)||a.end.localeCompare(b.end))){
       const r=roomOf(it.room);
       h+=boardItemHtml({...it,sub:r.name+(it.sub?" · "+it.sub:"")},day,now,"");
     }
