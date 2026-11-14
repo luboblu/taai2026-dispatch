@@ -1,6 +1,6 @@
 {
  "v": 2,
- "nextId": 1036,
+ "nextId": 1037,
  "roles": {
   "bus": [
    {
@@ -83,7 +83,8 @@
    }
   ],
   "all": [],
-  "a1003": []
+  "a1003": [],
+  "a1036": []
  },
  "leads": {
   "main": "盧信廷、曾郁翔",
@@ -94,7 +95,8 @@
   "P": "陳孝宗",
   "reg": "藺宇昕、彭紹傑",
   "all": "—",
-  "a1003": "廖怡婷"
+  "a1003": "廖怡婷",
+  "a1036": ""
  },
  "leadStatus": {
   "B": "未通知",
@@ -134,6 +136,11 @@
    "k": "a1003",
    "name": "引導區(一中一英)",
    "place": "1F大廳"
+  },
+  {
+   "k": "a1036",
+   "name": "服務臺",
+   "place": "1F"
   }
  ],
  "areaOverrides": {
@@ -177,7 +184,7 @@
    "people": "Tran Dieu Thanh Phuong (Louise)",
    "need": 1,
    "note": "時間待確認",
-   "room": "a1003",
+   "room": "a1036",
    "day": "d1",
    "start": "08:00",
    "end": "17:00"
@@ -1176,5 +1183,5 @@
   "Vo Vinh Truong (Vinton)": {},
   "Najeeb Ullah (Najeeb)": {}
  },
- "updatedAt": "2026-11-14T14:23:07.826Z"
+ "updatedAt": "2026-11-14T14:42:48.999Z"
 }
