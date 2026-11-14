@@ -470,9 +470,9 @@ main:focus{outline:0}
 .board-days{display:grid;gap:18px;min-width:0}
 .board-day{min-width:0}
 .board-wrap{border:1px solid var(--line);border-radius:0 0 7px 7px;border-top:0;overflow:auto;max-height:calc(100vh - 176px);background:var(--bg)}
-/* 總表用滿整個內容寬度；每欄最窄 88px，一般筆電不用左右捲動 */
+/* 總表用滿整個內容寬度；每欄最窄 72px，一般筆電不用左右捲動 */
 body.view-board main{max-width:none}
-.board-grid{display:grid;grid-template-columns:minmax(52px,max-content) repeat(var(--lanes),minmax(0,1fr));grid-template-rows:auto repeat(var(--rows),minmax(24px,auto));min-width:calc(56px + var(--lanes) * 88px)}
+.board-grid{display:grid;grid-template-columns:minmax(52px,max-content) repeat(var(--lanes),minmax(0,1fr));grid-template-rows:auto repeat(var(--rows),minmax(24px,auto));min-width:calc(56px + var(--lanes) * 72px)}
 .b-corner,.b-head{position:sticky;top:0;z-index:3;background:var(--surface2);border-bottom:1px solid var(--line);padding:6px 8px;font-size:.7812rem;grid-row:1}
 .b-corner{left:0;z-index:4;grid-column:1;color:var(--muted);font-weight:500}
 .b-head{border-left:1px solid var(--line);font-weight:600;box-shadow:inset 0 3px 0 var(--hue,transparent)}
@@ -497,6 +497,7 @@ body.view-board main{max-width:none}
 .b-label{color:var(--muted)}
 .b-item .short,.b-head .short{color:var(--warn);font-weight:600}
 .board-list{display:none}
+.nm-nick{display:none}
 .l-group{display:grid;gap:5px;padding:8px 0;border-bottom:1px solid var(--line)}
 .l-group h2{margin:0;font-size:.8125rem;font-weight:600;font-variant-numeric:tabular-nums}
 .l-group .b-item{margin:0;padding:7px 9px;font-size:.8438rem}
@@ -544,6 +545,8 @@ body.view-board main{max-width:none}
   .b-when{font-size:6.5pt}
   .b-sub{display:none}
   .b-person{margin-top:0}
+  .nm-full{display:none}
+  .nm-nick{display:inline}
   .board-pre .b-item{font-size:8pt}
   .tbl thead th{position:static}
   .tbl tr{break-inside:avoid}
@@ -1184,9 +1187,14 @@ function boardItemState(it,day,now){
   if(it.start<=now.time&&now.time<it.end)return " live";
   return it.end<=now.time?" past":"";
 }
+// 英文名列印時只印括號裡的暱稱（例如 Dinh Thi My Hanh (Hana) 印成 Hana），讓總表維持每天 1 頁；畫面上仍顯示全名
+function boardName(n){
+  const m=/[A-Za-z]/.test(n)&&n.match(/^(.+?)\s*\(([^)]+)\)$/);
+  return m?'<span class="nm-full">'+esc(n)+'</span><span class="nm-nick">'+esc(m[2])+"</span>":esc(n);
+}
 function boardLineHtml(l){
   const short=l.people.length<l.need;
-  const who=l.people.length?esc(l.people.join("、")):"";
+  const who=l.people.map(boardName).join("、");
   const tag=l.need>1?' <span class="'+(short?"short":"")+'">'+l.people.length+"/"+l.need+"</span>":"";
   return '<span class="b-person"><span class="b-label">'+esc(l.label)+"</span> "+(who||'<span class="short">未指派</span>')+tag+"</span>";
 }
@@ -1657,6 +1665,11 @@ function personMinutes(list){
 }
 function fmtHours(m){return m?String(Math.round(m/6)/10):""}
 function todosOf(n){return state.todos.filter(t=>!t.done&&names(t.people).includes(n))}
+// 頭像字：中文名取最後一字；英文名取括號裡的暱稱（沒有就取全名）第一個字母，避免出現「)」
+function avatarChar(n){
+  const m=n.match(/\(([^)]+)\)\s*$/),t=(m?m[1]:n).trim();
+  return /[\u3400-\u9fff]/.test(t)?([...t].slice(-1)[0]||""):(t[0]||"").toUpperCase();
+}
 function renderPeople(){
   const map=CTX.tasks,bad=mode.canEdit?CTX.bad:new Map();
   let rows=[...map.keys()].map(n=>{
@@ -1694,7 +1707,7 @@ function renderPeople(){
   const q=ui.peopleQ.trim().toLowerCase();
   rows.forEach((r,i)=>{
     const {n,list,info,cf,todos,mins}=r,search=(n+" "+(info.group||"")).toLowerCase();
-    h+='<details class="person'+(list.length||todos.length?"":" no-task")+'" data-person="'+esc(n)+'" data-search="'+esc(search)+'"'+(ui.openPeople.has(n)?" open":"")+(q&&!search.includes(q)?" hidden":"")+'><summary><span class="person-name"><span class="avatar" aria-hidden="true" style="--hue:'+ROOM_HUES[[...n].reduce((a,c)=>a+c.codePointAt(0),0)%8]+'">'+esc([...n].slice(-1)[0]||"")+"</span>"+esc(n)+(n===ui.me?'<span class="me-tag">我</span>':"")+'</span><span class="person-group">'+esc(info.group||"")+'</span><span class="person-num">'+(list.length||"")+'</span><span class="person-num person-hours">'+fmtHours(mins)+'</span><span class="person-num person-todo">'+(todos.length||"")+'</span><span class="person-flag">'+(cf?'<span class="tag-bad">時段重疊</span>':"")+"</span>"+ICON.next+'</summary><div class="body">';
+    h+='<details class="person'+(list.length||todos.length?"":" no-task")+'" data-person="'+esc(n)+'" data-search="'+esc(search)+'"'+(ui.openPeople.has(n)?" open":"")+(q&&!search.includes(q)?" hidden":"")+'><summary><span class="person-name"><span class="avatar" aria-hidden="true" style="--hue:'+ROOM_HUES[[...n].reduce((a,c)=>a+c.codePointAt(0),0)%8]+'">'+esc(avatarChar(n))+"</span>"+esc(n)+(n===ui.me?'<span class="me-tag">我</span>':"")+'</span><span class="person-group">'+esc(info.group||"")+'</span><span class="person-num">'+(list.length||"")+'</span><span class="person-num person-hours">'+fmtHours(mins)+'</span><span class="person-num person-todo">'+(todos.length||"")+'</span><span class="person-flag">'+(cf?'<span class="tag-bad">時段重疊</span>':"")+"</span>"+ICON.next+'</summary><div class="body">';
     if(mode.canEdit)h+='<div class="fields"><label>姓名<input id="pname-'+i+'" data-rename="'+esc(n)+'" value="'+esc(n)+'"></label><label>組別<input id="pgroup-'+i+'" data-pinfo="group" data-p="'+esc(n)+'" value="'+esc(info.group||"")+'"></label><label>聯絡方式'+(mode.hosted?"（不會發布）":"")+'<input id="pcontact-'+i+'" data-pinfo="contact" data-p="'+esc(n)+'" value="'+esc(info.contact||"")+'"></label></div>';
     h+=list.length?personTasksHtml(list,cf):(todos.length?"":'<p class="tip">還沒有分配工作。</p>');
     if(todos.length)h+='<div class="day-tasks"><div class="day-label">籌備待辦</div><ul class="tasks">'+todos.map(t=>'<li><span class="t">'+(t.due?esc(fmtDue(t.due)):"未定期限")+"</span><span>"+esc(t.title)+"</span></li>").join("")+"</ul></div>";
@@ -2603,7 +2616,7 @@ async function loadHosted(){
   }
   render();
   if(conflict)openConflict("load",state,conflict);
-  else if(!applyAgendaFix())applyStaffPlan();
+  else if(!applyAgendaFix()&&!applyStaffPlan())applyRoster();
 }
 async function pollRemote(){
   if(mode.publishing||mode.pendingLocal)return;
@@ -2671,6 +2684,46 @@ function applyStaffPlan(){
   if(!n)return false;
   save();refresh();
   toast("已依分工表填入大會廳場次負責人、報到國內／國際組、場地佈置，並在各廳加上兩位學生協助的欄位。按「發布」後大家才看得到。",undoFrom(before));
+  return true;
+}
+// 2026-11-14 國際學生 11/20 分工名單（Task Distribution for TAAI 2026）：
+// 補進人員；麗景廳 A、麗泉廳 C、海報區、報到國際組填入「學生（國際學院）」等欄位；1 樓服務臺、2 樓引導區新增為工作。
+// 只補空白、不覆蓋；名單上 Alice 的拼法是 Minh，舊的 Ming 會改過來。每個瀏覽器只套用一次，按復原後不會再套用。
+const ROSTER_KEY=KEY+"-roster-1114";
+function applyRoster(){
+  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal||document.querySelector("dialog[open]"))return false;
+  try{if(localStorage.getItem(ROSTER_KEY))return false;localStorage.setItem(ROSTER_KEY,"1")}catch(e){return false}
+  const before=JSON.stringify(state),I="學生（國際學院）";
+  let n=0;
+  const OLD="Nguyen Ming Hang (Alice)",ALICE="Nguyen Minh Hang (Alice)";
+  if(allTasks().has(OLD)){
+    // 舊拼法併入新拼法；同一格兩個都有時只留一個
+    const fix=v=>{const a=names(v);return a.includes(OLD)?[...new Set(a.map(x=>x===OLD?ALICE:x))].join("、"):v};
+    for(const s of state.sessions)for(const r in s.assign)s.assign[r]=fix(s.assign[r]);
+    for(const k in state.leads)state.leads[k]=fix(state.leads[k]);
+    for(const j of state.jobs)j.people=fix(j.people);
+    for(const x of state.todos)x.people=fix(x.people);
+    state.people[ALICE]={...(state.people[OLD]||{}),...(state.people[ALICE]||{})};delete state.people[OLD];n++;
+  }
+  const LOUISE="Tran Dieu Thanh Phuong (Louise)",GUIDE=["Nguyen Thi Kim Hong (Pinkie)","Athar Alimmudin (Athar)","Lam Bao Vy (Vivian)"],
+    REG=["Pham Ngoc Thanh Vy (Vy)","Puvanut Jhuntain (Dodo)",ALICE],HALL=["Dinh Thi My Hanh (Hana)","Aido Luthfi Al Hakim (Aido)"],
+    VINTON="Vo Vinh Truong (Vinton)",NAJEEB="Najeeb Ullah (Najeeb)";
+  for(const p of ["Nguyen Ngoc Huyen (Daisy)",LOUISE,...GUIDE,...REG,"詹元薰",...HALL,VINTON,NAJEEB])if(!state.people[p]){state.people[p]={};n++}
+  const fill=(k,roleName,people)=>{
+    const r=(state.roles[k]||[]).find(x=>x.name===roleName);if(!r)return;
+    for(const x of state.sessions)if(x.room===k&&x.day==="d1"&&!names(x.assign[r.id]).length&&!isNA(x.assign[r.id])){x.assign[r.id]=people.join("、");n++}
+  };
+  fill("A",I,HALL);fill("C",I,[VINTON]);fill("P",I,[NAJEEB]);fill("reg","國際組",REG);
+  const room=ROOMS.some(r=>r.k==="a1003")?"a1003":"reg";
+  const job=(title,people,note)=>{
+    if(state.jobs.some(j=>j.title===title))return;
+    state.jobs.push({id:"j"+(state.nextId++),status:STATUS[0],title,linkId:null,people:people.join("、"),need:people.length,note,room,day:"d1",start:"08:00",end:"17:00"});n++;
+  };
+  job("1 樓服務臺",[LOUISE],"時間待確認");
+  job("2 樓引導區",GUIDE,"時間待確認；名單上 Vivian 標有 *");
+  if(!n)return false;
+  save();refresh();
+  toast("已依 11/20 國際學生分工名單補上人員，並填入麗景廳、麗泉廳、海報區、報到國際組，新增 1 樓服務臺與 2 樓引導區兩項工作。按「發布」後大家才看得到。",undoFrom(before));
   return true;
 }
 async function boot(){
@@ -2776,12 +2829,26 @@ document.addEventListener("keydown",e=>{
   if(m){m.open=false;m.querySelector("summary").focus()}
 });
 let printOpened=[];
+// 列印總表時，某一天放不進一頁（A4 橫向扣掉 8mm 邊界）就整體縮小到剛好一頁。
+// 先把列印樣式暫時套到畫面上量高度，量完立刻拿掉；最多縮到 60%。
+function fitBoardPrint(){
+  const days=[...document.querySelectorAll(".board-day")];
+  days.forEach(d=>{d.style.zoom=""});
+  if(ui.view!=="board"||!days.length)return;
+  let css="";
+  for(const sh of document.styleSheets){try{for(const r of sh.cssRules)if(r.media&&[...r.media].includes("print"))css+=[...r.cssRules].map(x=>x.cssText).join("\n")}catch(e){}}
+  const st=document.createElement("style");st.textContent=css+"\n.board-day{width:281mm;box-sizing:border-box}";document.head.appendChild(st);
+  const pageH=194*96/25.4-4,zs=days.map(d=>{const h=d.getBoundingClientRect().height;return h>pageH?Math.max(.6,Math.floor(pageH/h*100)/100):1});
+  st.remove();
+  days.forEach((d,i)=>{if(zs[i]<1)d.style.zoom=zs[i]});
+}
 window.addEventListener("beforeprint",()=>{
   $("pageStyle").textContent="@page{size:A4 "+(ui.view==="board"?"landscape":"portrait")+";margin:"+(ui.view==="board"?"8mm":"12mm")+"}";
   printOpened=[];
   if(ui.view==="people")document.querySelectorAll("details.person:not([open])").forEach(x=>{x.open=true;printOpened.push(x)});
+  fitBoardPrint();
 });
-window.addEventListener("afterprint",()=>{printOpened.forEach(x=>{x.open=false});printOpened=[]});
+window.addEventListener("afterprint",()=>{printOpened.forEach(x=>{x.open=false});printOpened=[];document.querySelectorAll(".board-day").forEach(d=>{d.style.zoom=""})});
 setInterval(()=>{
   if(ui.view!=="board"||document.hidden||document.querySelector("dialog[open]"))return;
   const a=document.activeElement;
