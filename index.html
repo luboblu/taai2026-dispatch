@@ -1367,9 +1367,12 @@ function noteArr(list,create){
 }
 function noteLabel(list){const k=roomOfList(list);return k?roomOf(k).name+" 備註":(NOTE_LISTS[list]||NOTE_LISTS.pub).label}
 function newNoteId(list){return list==="priv"?"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6):"n"+(state.nextId++)}
+// 手機（觸控）沒有 Shift+Enter：Enter 直接換行，按「新增」送出
+const touchInput=()=>{try{return matchMedia("(pointer:coarse)").matches}catch(e){return false}};
 function noteAddHtml(list,ph){
   const L=noteLabel(list);
-  return '<div class="note-add"><textarea id="noteNew-'+esc(list)+'" rows="1" maxlength="2000" data-noteadd="'+esc(list)+'" aria-label="新增'+esc(L)+'" placeholder="'+esc(ph||"新增一條，按 Enter；Shift+Enter 換行")+'">'+esc(ui.noteDraft[list]||"")+'</textarea><button type="button" data-noteaddbtn="'+esc(list)+'">新增</button></div>';
+  ph=touchInput()?(ph?ph.replace("，按 Enter","")+"。":"新增一條，")+"可以換行，按「新增」送出":(ph||"新增一條，按 Enter；Shift+Enter 換行");
+  return '<div class="note-add"><textarea id="noteNew-'+esc(list)+'" rows="1" maxlength="2000" data-noteadd="'+esc(list)+'" aria-label="新增'+esc(L)+'" placeholder="'+esc(ph)+'">'+esc(ui.noteDraft[list]||"")+'</textarea><button type="button" data-noteaddbtn="'+esc(list)+'">新增</button></div>';
 }
 function noteViewHtml(arr,label){
   return '<ol class="note-view" aria-label="'+esc(label)+'">'+arr.map(n=>'<li><span class="t">'+esc(n.text)+"</span>"+(n.at?"<small>"+esc(fmtTime(n.at))+" 更新</small>":"")+"</li>").join("")+"</ol>";
@@ -1977,7 +1980,7 @@ $("main").addEventListener("change",e=>{
 });
 $("main").addEventListener("keydown",e=>{
   const na=e.target.dataset&&e.target.dataset.noteadd;
-  if(!na||e.key!=="Enter"||e.shiftKey||e.isComposing||e.keyCode===229)return;
+  if(!na||e.key!=="Enter"||e.shiftKey||e.isComposing||e.keyCode===229||touchInput())return;
   e.preventDefault();addNote(na,e.target.value);
 });
 $("main").addEventListener("keydown",e=>{
