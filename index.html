@@ -500,6 +500,9 @@ body.view-board main{max-width:none}
 .b-label{color:var(--muted)}
 .b-item .short,.b-head .short{color:var(--warn);font-weight:600}
 .board-list{display:none}
+/* 電腦版總表放不下（例如 1024px 筆電）時，改用跟手機一樣的清單，不用左右捲動；列印仍用時間表 */
+.board-narrow .board-wrap{display:none}
+.board-narrow .board-list{display:block}
 .nm-nick{display:none}
 .l-group{display:grid;gap:5px;padding:8px 0;border-bottom:1px solid var(--line)}
 .l-group h2{margin:0;font-size:.8125rem;font-weight:600;font-variant-numeric:tabular-nums}
@@ -1225,7 +1228,9 @@ function boardLeadHtml(r){
   const list=names(state.leads[r.k]);
   if(isNA(state.leads[r.k]))return "";
   const need=leadNeed(r.k);
-  return "<small>"+(list.length?esc(list.join("、")):'<span class="short">未指派</span>')+(need>1?' <span class="'+(list.length<need?"short":"")+'">'+list.length+"/"+need+"</span>":"")+"</small>";
+  // 負責人超過 2 位時只列第一位加人數，避免欄頭變得很高；滑過去看得到全部
+  const who=list.length>2?'<span title="'+esc(list.join("、"))+'">'+esc(list[0])+" 等 "+list.length+" 人</span>":esc(list.join("、"));
+  return "<small>"+(list.length?who:'<span class="short">未指派</span>')+(need>1?' <span class="'+(list.length<need?"short":"")+'">'+list.length+"/"+need+"</span>":"")+"</small>";
 }
 function boardGridHtml(items,day,now){
   const L=boardLayout(items),rows=L.times.length-1,liveDay=DAY_DATE[day]===now.date;
@@ -1284,6 +1289,12 @@ function renderBoard(){
   }
   $("main").innerHTML=h+"</div>";
   applyBoardPerson();
+  fitBoardScreen();
+}
+function fitBoardScreen(){
+  const m=$("main");m.classList.remove("board-narrow");
+  if(ui.view!=="board")return;
+  if([...m.querySelectorAll(".board-wrap")].some(w=>w.offsetParent&&w.scrollWidth>w.clientWidth+1))m.classList.add("board-narrow");
 }
 function applyBoardPerson(){
   const q=ui.boardPerson.trim().toLowerCase();
@@ -1781,6 +1792,7 @@ function renderLoadError(){
 }
 function render(){
   syncRooms();
+  $("main").classList.remove("board-narrow");
   const scope=(mode.canEdit?"e:":"v:")+(ui.view==="jobs"?"jobs":ui.view==="room"?"room:"+ui.room:ui.view);
   if(scope!==ui.selScope){ui.sel.clear();ui.selScope=scope;lastSelIdx=null}
   const map=allTasks();CTX={tasks:map,bad:conflictInfo(map)};
@@ -1847,6 +1859,7 @@ function updateStick(){
   document.documentElement.style.setProperty("--toph",top.offsetHeight+"px");
 }
 window.addEventListener("resize",updateStick);
+window.addEventListener("resize",()=>{if(ui.view==="board")fitBoardScreen();else $("main").classList.remove("board-narrow")});
 
 // 姓名標籤的操作
 let pointerDown=false,pendingAfter=null;
