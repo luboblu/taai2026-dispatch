@@ -96,7 +96,7 @@
   "reg": "藺宇昕、彭紹傑",
   "all": "—",
   "a1003": "廖怡婷、Nguyen Thi Kim Hong (Pinkie)、Athar Alimmudin (Athar)、Lam Bao Vy (Vivian)",
-  "a1036": ""
+  "a1036": "Tran Dieu Thanh Phuong (Louise)"
  },
  "leadStatus": {
   "B": "未通知",
@@ -181,7 +181,7 @@
    "status": "未通知",
    "title": "1 樓服務臺",
    "linkId": null,
-   "people": "Tran Dieu Thanh Phuong (Louise)",
+   "people": "",
    "need": 1,
    "note": "時間待確認",
    "room": "a1036",
@@ -1159,5 +1159,5 @@
   "Vo Vinh Truong (Vinton)": {},
   "Najeeb Ullah (Najeeb)": {}
  },
- "updatedAt": "2026-11-14T16:07:46.797Z"
+ "updatedAt": "2026-11-14T18:32:29.450Z"
 }
