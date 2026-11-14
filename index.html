@@ -1082,6 +1082,8 @@ function banners(){
   let h="";
   if(ui.message&&ui.msgErr)h+='<div class="banner" role="alert">'+esc(ui.message)+"</div>";
   if(ui.canRestore&&mode.canEdit)h+='<div class="banner info" role="status"><span>已載入線上版，你原本的版本還保留在這個瀏覽器。</span><button type="button" data-restore="1">還原我的版本</button><button type="button" class="ghost" data-restore-close="1">關閉</button></div>';
+  const fix=mode.pendingLocal?null:agendaFix2Pending();
+  if(fix)h+='<div class="banner info" role="status"><span>官網議程有更新：'+fix.change+' 個場次要改名稱或時間'+(fix.drop?"，"+fix.drop+" 個空場次要合併":"")+'（第 1 天會議室 D、大會廳專題教學；第 2 天大會廳與會議室 C 合併時段、午宴）。</span><button type="button" data-agenda-fix="1">套用</button><button type="button" class="ghost" data-agenda-fix-skip="1">略過</button></div>';
   if(mode.remoteNewer&&mode.canEdit)h+='<div class="banner info" role="status"><span>線上有較新的版本，發布時會請你確認。</span></div>';
   if(!storageOK)h+='<div class="banner" role="alert">這個瀏覽器無法自動儲存，關閉前請用「匯出」裡的備份保存資料。</div>';
   return h;
@@ -2036,6 +2038,8 @@ $("main").addEventListener("click",e=>{
   if(d.retry){mode.loadState="loading";render();loadHosted();return}
   if(d.restore){restoreReplaced();return}
   if(d.restoreClose){ui.canRestore=false;refresh();return}
+  if(d.agendaFix){doAgendaFix2();return}
+  if(d.agendaFixSkip){try{localStorage.setItem(AGENDA_FIX2_KEY+"-skip","1")}catch(e){}refresh();return}
   if(d.addarea){openArea(null);return}
   if(d.editarea){openArea(d.editarea);return}
   if(d.addjob){openJob(null,{link:d.link,room:d.jobRoom});return}
@@ -2739,25 +2743,37 @@ const AGENDA_FIX2=[
   [["s36","main","d2","14:40","15:30","特別場次 3","",{title:"Physical AI 專題教學"}]],
   [["s30","all","d2","12:00","13:00","午餐","",{title:"午宴",sub:"1F 麗池廳"}]]
 ];
-function applyAgendaFix2(){
-  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal||document.querySelector("dialog[open]"))return false;
-  try{if(localStorage.getItem(AGENDA_FIX2_KEY))return false;localStorage.setItem(AGENDA_FIX2_KEY,"1")}catch(e){return false}
-  const find=([id,room,day,start,end,title,sub,change])=>{
-    const x=state.sessions.find(y=>y.id===id&&y.room===room&&y.day===day&&y.start===start&&y.end===end&&y.title===title&&String(y.sub||"")===sub);
-    if(!x||change)return x;
-    const empty=!Object.values(x.assign||{}).some(v=>String(v||"").trim())&&!String(x.note||"").trim()&&(x.status||STATUS[0])===STATUS[0]&&!state.jobs.some(j=>j.linkId===id);
-    return empty?x:null;
-  };
-  const groups=AGENDA_FIX2.filter(g=>g.every(find));
+function agendaFix2Find([id,room,day,start,end,title,sub,change]){
+  const x=state.sessions.find(y=>y.id===id&&y.room===room&&y.day===day&&y.start===start&&y.end===end&&y.title===title&&String(y.sub||"")===sub);
+  if(!x||change)return x;
+  const empty=!Object.values(x.assign||{}).some(v=>String(v||"").trim())&&!String(x.note||"").trim()&&(x.status||STATUS[0])===STATUS[0]&&!state.jobs.some(j=>j.linkId===id);
+  return empty?x:null;
+}
+function agendaFix2Groups(){return AGENDA_FIX2.filter(g=>g.every(agendaFix2Find))}
+// 統籌登入時，若還有符合舊值的場次，頁面頂端會提示，可以按「套用」或「略過」（不靠自動套用的時機）
+function agendaFix2Pending(){
+  if(!mode.canEdit||mode.loadState!=="ready")return null;
+  try{if(localStorage.getItem(AGENDA_FIX2_KEY+"-skip"))return null}catch(e){}
+  const all=agendaFix2Groups().flat(),drop=all.filter(c=>!c[7]).length;
+  return all.length?{change:all.length-drop,drop}:null;
+}
+function doAgendaFix2(){
+  const groups=agendaFix2Groups();
   if(!groups.length)return false;
+  try{localStorage.setItem(AGENDA_FIX2_KEY,"1")}catch(e){}
   const before=JSON.stringify(state);
-  const plan=groups.flatMap(g=>g.map(c=>[find(c),c[7]]));
+  const plan=groups.flatMap(g=>g.map(c=>[agendaFix2Find(c),c[7]]));
   for(const [x,change] of plan)if(change)Object.assign(x,change);
   const drop=new Set(plan.filter(p=>!p[1]).map(p=>p[0]));
   state.sessions=state.sessions.filter(x=>!drop.has(x));
   save();refresh();
   toast("已依官網議程更新 "+(plan.length-drop.size)+" 個場次"+(drop.size?"，並合併掉 "+drop.size+" 個空場次":"")+"。按「發布」後大家才看得到。",undoFrom(before));
   return true;
+}
+function applyAgendaFix2(){
+  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal||document.querySelector("dialog[open]"))return false;
+  try{if(localStorage.getItem(AGENDA_FIX2_KEY)||localStorage.getItem(AGENDA_FIX2_KEY+"-skip"))return false;localStorage.setItem(AGENDA_FIX2_KEY,"1")}catch(e){return false}
+  return doAgendaFix2();
 }
 // 2026-11-14 把「1 樓服務臺」從引導區(一中一英)分出來，放到新的「服務臺」區域（1F）。
 // 只搬標題是「1 樓服務臺」且還在 a1003 的工作；已有叫「服務臺」的區域就沿用。每個瀏覽器只套用一次，可復原。
