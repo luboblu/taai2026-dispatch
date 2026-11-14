@@ -95,7 +95,7 @@
   "P": "陳孝宗",
   "reg": "藺宇昕、彭紹傑",
   "all": "—",
-  "a1003": "廖怡婷",
+  "a1003": "廖怡婷、Nguyen Thi Kim Hong (Pinkie)、Athar Alimmudin (Athar)、Lam Bao Vy (Vivian)",
   "a1036": ""
  },
  "leadStatus": {
@@ -194,7 +194,7 @@
    "status": "未通知",
    "title": "2 樓引導區",
    "linkId": null,
-   "people": "Nguyen Thi Kim Hong (Pinkie)、Athar Alimmudin (Athar)、Lam Bao Vy (Vivian)",
+   "people": "",
    "need": 3,
    "note": "時間待確認；名單上 Vivian 標有 *",
    "room": "a1003",
@@ -1159,5 +1159,5 @@
   "Vo Vinh Truong (Vinton)": {},
   "Najeeb Ullah (Najeeb)": {}
  },
- "updatedAt": "2026-11-14T15:26:19.493Z"
+ "updatedAt": "2026-11-14T16:07:46.797Z"
 }
