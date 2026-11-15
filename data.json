@@ -103,7 +103,8 @@
   "main": "未通知"
  },
  "leadNeeds": {
-  "reg": 2
+  "reg": 2,
+  "a1003": 4
  },
  "todos": [
   {
@@ -135,11 +136,11 @@
   {
    "k": "a1003",
    "name": "引導區(一中一英)",
-   "place": "1F大廳"
+   "place": "2F"
   },
   {
    "k": "a1036",
-   "name": "服務臺",
+   "name": "指引處",
    "place": "1F"
   }
  ],
@@ -155,7 +156,7 @@
    "status": "未通知",
    "title": "司儀",
    "linkId": "s4",
-   "people": "Nguyen Ngoc Huyen (Daisy)",
+   "people": "Nguyen Ngoc Huyen (Daisy)、孫維希",
    "note": "",
    "room": null,
    "day": null,
@@ -1159,5 +1160,5 @@
   "Vo Vinh Truong (Vinton)": {},
   "Najeeb Ullah (Najeeb)": {}
  },
- "updatedAt": "2026-11-15T13:58:55.080Z"
+ "updatedAt": "2026-11-15T14:05:20.979Z"
 }
