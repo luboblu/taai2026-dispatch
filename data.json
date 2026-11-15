@@ -1,6 +1,6 @@
 {
  "v": 2,
- "nextId": 1038,
+ "nextId": 1040,
  "roles": {
   "bus": [
    {
@@ -84,7 +84,8 @@
   ],
   "all": [],
   "a1003": [],
-  "a1036": []
+  "a1036": [],
+  "a1038": []
  },
  "leads": {
   "main": "盧信廷、曾郁翔",
@@ -96,7 +97,8 @@
   "reg": "藺宇昕、彭紹傑",
   "all": "—",
   "a1003": "廖怡婷、Nguyen Thi Kim Hong (Pinkie)、Athar Alimmudin (Athar)、Lam Bao Vy (Vivian)",
-  "a1036": "Tran Dieu Thanh Phuong (Louise)"
+  "a1036": "Tran Dieu Thanh Phuong (Louise)",
+  "a1038": ""
  },
  "leadStatus": {
   "B": "未通知",
@@ -142,6 +144,11 @@
    "k": "a1036",
    "name": "指引處",
    "place": "1F"
+  },
+  {
+   "k": "a1038",
+   "name": "貴賓桌",
+   "place": "五樓"
   }
  ],
  "areaOverrides": {
@@ -202,6 +209,19 @@
    "day": "d1",
    "start": "08:00",
    "end": "17:00"
+  },
+  {
+   "id": "j1039",
+   "status": "未通知",
+   "title": "招待貴賓",
+   "linkId": null,
+   "people": "盧信廷",
+   "need": 1,
+   "note": "",
+   "room": "a1038",
+   "day": "d1",
+   "start": "08:00",
+   "end": "09:00"
   }
  ],
  "notes": "開幕典禮長官席是否需要特別安排以及誰要上台致詞\n\n五組筆電 投影筆 轉接頭 簡報筆 5+1組\n\n第一天 有個國外講者線上進行  需要用會議連結 美國習慣用zoom\n\nAi cup玉山盃在第一天早上\n\n一廳派一個工讀小弟\n\nAndy在會議室D協助花生\n\n有名單要給各組會議廳負責人 因為有些學生報告方式不一樣\n\n晚宴也需要人手 收餐券帶入席 (三位)\n\n晚宴要司儀 開幕閉幕晚宴司儀可以同一位\n\n當天會印論文獎獎狀 論文發表獎\n\n會議廳 AB海報區 發評分表發錢\n\n各場次分組拍照上傳\n\n各廳負責人 AB海報區 要印簽到表\n\n各廳負責人拍照部分確認發表者有來 如果團體照主持人有要求再拍\n\n大會資料袋內容物：\n1_北大筆記本\n2_研討會紀念筆\n3_大北熊(小)\n4_研討會文宣",
@@ -1160,5 +1180,5 @@
   "Vo Vinh Truong (Vinton)": {},
   "Najeeb Ullah (Najeeb)": {}
  },
- "updatedAt": "2026-11-15T14:08:33.135Z"
+ "updatedAt": "2026-11-15T14:11:24.798Z"
 }
