@@ -25,7 +25,7 @@
 
 1. **同一時間只讓一個助理改 `index.html`。** 整個程式在同一個檔案裡，兩邊同時改一定會衝突。
 2. **開始前先 `git pull`。** 以 repo 裡最新的 `index.html` 為基礎修改。不要拿自己手上的舊副本整檔覆蓋，否則會蓋掉別人的修改。
-3. **改完立刻 commit 並 push**（直接推 `main`，或開 PR 讓統籌合併）。commit 訊息用繁體中文，寫清楚改了什麼。
+3. **改完立刻 commit；push 前先讓統籌確認**（直接推 `main`，或開 PR 讓統籌合併），因為 push 後所有人都會看到新版。commit 訊息用繁體中文，寫清楚改了什麼。
 4. **只 commit 程式和說明。** 不要 commit `data.json` 的變動，也不要 commit `.test/`。
 5. **不要把任何 token、密碼、電話或 email 寫進檔案。** 這個 repo 是公開的。
 
