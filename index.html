@@ -2813,7 +2813,7 @@ function doAgendaFix2(){
   return true;
 }
 // 2026-11-16 接駁車依預約系統（aicp.ntpu.ai 接駁車預約）改成班次號碼；80 座的班次是兩台車，各需一位隨車人員。
-// 只改時間、名稱、補充說明都還是舊值的場次；原本的隨車人員留在第 1 台，第 2 台是新增的空位。
+// 只改時間、名稱、補充說明都還是舊值的場次；原本的隨車人員留在第 1 台，已排兩位以上時第二位起移到第 2 台。
 // 統籌登入時頁面頂端會提示，按「套用」或「略過」，都會記錄在這個瀏覽器；按「復原」會清掉套用紀錄，可以再套用。發布後才公開。
 const SHUTTLE_KEY=KEY+"-shuttle-1116";
 const SH_TPE="捷運臺北大學站（三鶯線）",SH_BQ="板橋高鐵站",SH_DBG="大板根";
@@ -2847,8 +2847,11 @@ function doShuttleFix(){
     if(two){
       const t2="班次 "+no+" "+dir+"（第 2 台）";
       if(!state.sessions.some(y=>y.room==="bus"&&y.day===day&&y.title===t2)){
+        // 原本已排兩位以上隨車人員時，第一位留在第 1 台，其餘移到第 2 台
+        const assign={};
+        for(const rid in x.assign){const crew=names(x.assign[rid]);if(crew.length>1){x.assign[rid]=crew[0];assign[rid]=crew.slice(1).join("、")}}
         const i=state.sessions.indexOf(x);
-        state.sessions.splice(i+1,0,{id:"c"+(state.nextId++),room:"bus",day,start,end,title:t2,sub,assign:{},status:STATUS[0],note:""});
+        state.sessions.splice(i+1,0,{id:"c"+(state.nextId++),room:"bus",day,start,end,title:t2,sub,assign,status:STATUS[0],note:""});
         added++;
       }
     }
