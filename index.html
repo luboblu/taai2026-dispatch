@@ -1097,6 +1097,8 @@ function banners(){
   let h="";
   if(ui.message&&ui.msgErr)h+='<div class="banner" role="alert">'+esc(ui.message)+"</div>";
   if(ui.canRestore&&mode.canEdit)h+='<div class="banner info" role="status"><span>已載入線上版，你原本的版本還保留在這個瀏覽器。</span><button type="button" data-restore="1">還原我的版本</button><button type="button" class="ghost" data-restore-close="1">關閉</button></div>';
+  const sh=shuttlePending();
+  if(sh)h+='<div class="banner info" role="status"><span>接駁車班次有更新：'+sh.n+' 個班次改成預約系統的班次號碼'+(sh.split?'；其中 '+sh.split+' 個是 80 座、要分成兩台車，各需一位隨車人員':'')+'。</span><button type="button" data-shuttle-fix="1">套用</button><button type="button" class="ghost" data-shuttle-fix-skip="1">略過</button></div>';
   const fix=mode.pendingLocal?null:agendaFix2Pending();
   if(fix)h+='<div class="banner info" role="status"><span>官網議程有更新：'+fix.change+' 個場次要改名稱或時間'+(fix.drop?"，"+fix.drop+" 個空場次要合併":"")+'（第 1 天會議室 D、大會廳專題教學；第 2 天大會廳與會議室 C 合併時段、午宴）。</span><button type="button" data-agenda-fix="1">套用</button><button type="button" class="ghost" data-agenda-fix-skip="1">略過</button></div>';
   if(mode.remoteNewer&&mode.canEdit)h+='<div class="banner info" role="status"><span>線上有較新的版本，發布時會請你確認。</span></div>';
@@ -2077,6 +2079,8 @@ $("main").addEventListener("click",e=>{
   if(d.restore){restoreReplaced();return}
   if(d.restoreClose){ui.canRestore=false;refresh();return}
   if(d.agendaFix){doAgendaFix2();return}
+  if(d.shuttleFix){doShuttleFix();return}
+  if(d.shuttleFixSkip){try{localStorage.setItem(SHUTTLE_KEY+"-skip","1")}catch(e){}refresh();return}
   if(d.agendaFixSkip){try{localStorage.setItem(AGENDA_FIX2_KEY+"-skip","1")}catch(e){}refresh();return}
   if(d.addarea){openArea(null);return}
   if(d.editarea){openArea(d.editarea);return}
@@ -2806,6 +2810,51 @@ function doAgendaFix2(){
   state.sessions=state.sessions.filter(x=>!drop.has(x));
   save();refresh();
   toast("已依官網議程更新 "+(plan.length-drop.size)+" 個場次"+(drop.size?"，並合併掉 "+drop.size+" 個空場次":"")+"。按「發布」後大家才看得到。",undoFrom(before));
+  return true;
+}
+// 2026-11-16 接駁車依預約系統（aicp.ntpu.ai 接駁車預約）改成班次號碼；80 座的班次是兩台車，各需一位隨車人員。
+// 只改時間、名稱、補充說明都還是舊值的場次；原本的隨車人員留在第 1 台，第 2 台是新增的空位。
+// 統籌登入時頁面頂端會提示，按「套用」或「略過」，都會記錄在這個瀏覽器；按「復原」會清掉套用紀錄，可以再套用。發布後才公開。
+const SHUTTLE_KEY=KEY+"-shuttle-1116";
+const SH_TPE="捷運臺北大學站（三鶯線）",SH_BQ="板橋高鐵站",SH_DBG="大板根";
+const SHUTTLE=[
+  ["bus0","d1","08:30","08:55","隨車（台北大學－大板根）去程","接駁車 1 · 捷運臺北大學站（三鶯線） → 大板根度假村","113","去程",SH_TPE,SH_DBG,40],
+  ["bus1","d1","08:40","09:30","隨車（板橋－大板根）去程","接駁車 2 · 板橋高鐵站 → 大板根度假村","123","去程",SH_BQ,SH_DBG,80],
+  ["bus2","d1","20:20","20:45","隨車（大板根－台北大學）回程","接駁車 3 · 大板根度假村 → 捷運臺北大學站（三鶯線）","131","回程",SH_DBG,SH_TPE,40],
+  ["bus3","d1","20:20","21:10","隨車（大板根－板橋）回程","接駁車 4 · 大板根度假村 → 板橋高鐵站","132","回程",SH_DBG,SH_BQ,80],
+  ["bus4","d2","08:30","08:55","隨車（台北大學－大板根）去程","接駁車 1 · 捷運臺北大學站（三鶯線） → 大板根度假村","213","去程",SH_TPE,SH_DBG,40],
+  ["bus5","d2","08:40","09:30","隨車（板橋－大板根）去程","接駁車 2 · 板橋高鐵站 → 大板根度假村","223","去程",SH_BQ,SH_DBG,80],
+  ["bus6","d2","17:20","17:45","隨車（大板根－台北大學）回程","接駁車 5 · 大板根度假村 → 捷運臺北大學站（三鶯線）","231","回程",SH_DBG,SH_TPE,40],
+  ["bus7","d2","17:20","18:10","隨車（大板根－板橋）回程","接駁車 6 · 大板根度假村 → 板橋高鐵站","232","回程",SH_DBG,SH_BQ,80]
+];
+function shuttleFind([id,day,start,end,title,sub]){
+  return state.sessions.find(x=>x.id===id&&x.room==="bus"&&x.day===day&&x.start===start&&x.end===end&&x.title===title&&String(x.sub||"")===sub);
+}
+function shuttlePending(){
+  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal)return null;
+  try{if(localStorage.getItem(SHUTTLE_KEY)||localStorage.getItem(SHUTTLE_KEY+"-skip"))return null}catch(e){}
+  const rows=SHUTTLE.filter(shuttleFind);
+  return rows.length?{n:rows.length,split:rows.filter(r=>r[10]>40).length}:null;
+}
+function doShuttleFix(){
+  const rows=SHUTTLE.map(r=>[r,shuttleFind(r)]).filter(x=>x[1]);
+  if(!rows.length)return false;
+  try{localStorage.setItem(SHUTTLE_KEY,"1")}catch(e){}
+  const before=JSON.stringify(state);let added=0;
+  for(const [[,day,start,end,,,no,dir,from,to,seats],x] of rows){
+    const two=seats>40,sub=from+" → "+to+" · "+seats+" 座"+(two?"，分 2 台":"");
+    Object.assign(x,{title:"班次 "+no+" "+dir+(two?"（第 1 台）":""),sub});
+    if(two){
+      const t2="班次 "+no+" "+dir+"（第 2 台）";
+      if(!state.sessions.some(y=>y.room==="bus"&&y.day===day&&y.title===t2)){
+        const i=state.sessions.indexOf(x);
+        state.sessions.splice(i+1,0,{id:"c"+(state.nextId++),room:"bus",day,start,end,title:t2,sub,assign:{},status:STATUS[0],note:""});
+        added++;
+      }
+    }
+  }
+  save();refresh();
+  toast("已依接駁車預約系統更新 "+rows.length+" 個班次"+(added?"，並把 80 座的班次分成兩台、新增 "+added+" 個第 2 台":"")+"。按「發布」後大家才看得到。",{undo:()=>{try{localStorage.removeItem(SHUTTLE_KEY)}catch(e){}undoFrom(before).undo()}});
   return true;
 }
 function applyAgendaFix2(){
