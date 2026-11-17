@@ -1099,6 +1099,8 @@ function banners(){
   if(ui.canRestore&&mode.canEdit)h+='<div class="banner info" role="status"><span>已載入線上版，你原本的版本還保留在這個瀏覽器。</span><button type="button" data-restore="1">還原我的版本</button><button type="button" class="ghost" data-restore-close="1">關閉</button></div>';
   const sh=shuttlePending();
   if(sh)h+='<div class="banner info" role="status"><span>接駁車班次有更新：'+sh.n+' 個班次改成預約系統的班次號碼'+(sh.split?'；其中 '+sh.split+' 個是 80 座、要分成兩台車，各需一位隨車人員':'')+'。</span><button type="button" data-shuttle-fix="1">套用</button><button type="button" class="ghost" data-shuttle-fix-skip="1">略過</button></div>';
+  const dn=dinnerPending();
+  if(dn)h+='<div class="banner info" role="status"><span>歡迎晚宴（11/20 18:00）可以加進來：'+[dn.n?'人員分配，新增 '+dn.n+' 項工作（場控、司儀、報到桌收餐券與帶位、隨機）'+(dn.lack?'，還缺 '+dn.lack+' 人（英文、中文各有待補）':''):'',dn.note?'場次備註寫入桌次（共 30 桌）':''].filter(Boolean).join('；')+'。</span><button type="button" data-dinner-fix="1">套用</button><button type="button" class="ghost" data-dinner-fix-skip="1">略過</button></div>';
   const fix=mode.pendingLocal?null:agendaFix2Pending();
   if(fix)h+='<div class="banner info" role="status"><span>官網議程有更新：'+fix.change+' 個場次要改名稱或時間'+(fix.drop?"，"+fix.drop+" 個空場次要合併":"")+'（第 1 天會議室 D、大會廳專題教學；第 2 天大會廳與會議室 C 合併時段、午宴）。</span><button type="button" data-agenda-fix="1">套用</button><button type="button" class="ghost" data-agenda-fix-skip="1">略過</button></div>';
   if(mode.remoteNewer&&mode.canEdit)h+='<div class="banner info" role="status"><span>線上有較新的版本，發布時會請你確認。</span></div>';
@@ -2081,6 +2083,8 @@ $("main").addEventListener("click",e=>{
   if(d.agendaFix){doAgendaFix2();return}
   if(d.shuttleFix){doShuttleFix();return}
   if(d.shuttleFixSkip){try{localStorage.setItem(SHUTTLE_KEY+"-skip","1")}catch(e){}refresh();return}
+  if(d.dinnerFix){doDinnerFix();return}
+  if(d.dinnerFixSkip){try{localStorage.setItem(DINNER_KEY+"-skip","1")}catch(e){}refresh();return}
   if(d.agendaFixSkip){try{localStorage.setItem(AGENDA_FIX2_KEY+"-skip","1")}catch(e){}refresh();return}
   if(d.addarea){openArea(null);return}
   if(d.editarea){openArea(d.editarea);return}
@@ -2858,6 +2862,45 @@ function doShuttleFix(){
   }
   save();refresh();
   toast("已依接駁車預約系統更新 "+rows.length+" 個班次"+(added?"，並把 80 座的班次分成兩台、新增 "+added+" 個第 2 台":"")+"。按「發布」後大家才看得到。",{undo:()=>{try{localStorage.removeItem(SHUTTLE_KEY)}catch(e){}undoFrom(before).undo()}});
+  return true;
+}
+// 2026-11-17 歡迎晚宴（11/20 18:00）人員分配：場控、司儀、報到桌（收餐券、帶位）、隨機。只新增工作，已有同名工作就略過。
+const DINNER_KEY=KEY+"-dinner-1117";
+const DINNER_JOBS=[
+  ["場控","侯惠晏",1,"滾動式與司儀台更新出席貴賓及師長名單"],
+  ["司儀","Nguyen Ngoc Huyen (Daisy)、孫維希",2,""],
+  ["報到桌（收餐券）","廖怡婷、劉伊恩",3,"待補 1 位（英文）"],
+  ["報到桌（帶位）","",2,"待補 2 位（英文 1 位、中文 1 位）"],
+  ["隨機","陳思因",1,"18:30 離開"]
+];
+const DINNER_NOTE="桌次：主桌 1（1 桌）；老師 2–9（8 桌）；素食 10（1 桌）；工作人員 11–12（2 桌）；學生 13–29（17 桌）；空桌 30（1 桌）。共 30 桌。";
+function dinnerSession(){
+  return state.sessions.find(x=>x.id==="s11"&&x.room==="main"&&x.day==="d1"&&x.start==="18:00"&&x.end==="20:00"&&x.title==="歡迎晚宴");
+}
+function dinnerTodo(){
+  const s=dinnerSession();
+  return s?DINNER_JOBS.filter(r=>!state.jobs.some(j=>j.linkId===s.id&&j.title===r[0])):[];
+}
+// 場次備註還是空的才寫入桌次，統籌已經寫過的備註不動
+function dinnerNoteTodo(){
+  const s=dinnerSession();
+  return !!s&&!String(s.note||"").trim();
+}
+function dinnerPending(){
+  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal)return null;
+  try{if(localStorage.getItem(DINNER_KEY)||localStorage.getItem(DINNER_KEY+"-skip"))return null}catch(e){}
+  const rows=dinnerTodo(),note=dinnerNoteTodo();
+  return rows.length||note?{n:rows.length,note,lack:rows.reduce((a,r)=>a+Math.max(0,r[2]-names(r[1]).length),0)}:null;
+}
+function doDinnerFix(){
+  const s=dinnerSession(),rows=dinnerTodo(),note=dinnerNoteTodo();
+  if(!s||(!rows.length&&!note))return false;
+  try{localStorage.setItem(DINNER_KEY,"1")}catch(e){}
+  const before=JSON.stringify(state);
+  for(const [title,people,need,note] of rows)state.jobs.push({id:"j"+(state.nextId++),status:STATUS[0],title,linkId:s.id,people,need,note,room:null,day:null,start:null,end:null});
+  if(note)s.note=DINNER_NOTE;
+  save();refresh();
+  toast("已把歡迎晚宴的"+[rows.length?"人員分配（"+rows.length+" 項工作）":"",note?"桌次":""].filter(Boolean).join("和")+"加進去。按「發布」後大家才看得到。",{undo:()=>{try{localStorage.removeItem(DINNER_KEY)}catch(e){}undoFrom(before).undo()}});
   return true;
 }
 function applyAgendaFix2(){
