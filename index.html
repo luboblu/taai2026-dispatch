@@ -517,6 +517,25 @@ body.view-board main{max-width:none}
 }
 
 /* 列印 */
+.ck-box{border:1px solid var(--accent);border-left-width:6px;border-radius:10px;background:var(--selected);padding:12px 16px 14px;display:grid;gap:10px}
+.ck-box>h2{font-size:1rem;font-weight:700;color:var(--accent);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.ck-box>h2 a{font-size:.8125rem;font-weight:500;margin-left:auto}
+.ck-item{display:grid;gap:4px}
+.ck-item h3{font-size:.9375rem;font-weight:700}
+.ck-item h3 small{font-weight:500;color:var(--muted);font-size:.8125rem;margin-left:6px}
+.ck-points{margin:0;padding-left:1.3em;display:grid;gap:2px;line-height:1.7;font-size:1rem}
+.ck-points li{overflow-wrap:anywhere}
+.ck-note{margin:2px 0 0;padding:6px 10px;border-left:4px solid var(--warn);background:var(--bg);border-radius:4px;color:var(--warn);font-weight:600;line-height:1.65;overflow-wrap:anywhere}
+.ck-note b{margin-right:6px}
+.ck-page{display:grid;gap:14px;max-width:84ch}
+.ck-card{border:1px solid var(--line2);border-left:6px solid var(--accent);border-radius:10px;background:var(--bg);padding:12px 16px 14px;display:grid;gap:6px}
+.ck-card h3{font-size:1.0625rem;font-weight:700;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.ck-card h3 .ck-where{font-size:.8125rem;font-weight:500;color:var(--muted)}
+.ck-card,.ck-item{break-inside:avoid}
+.ck-day{break-after:avoid}
+.ck-day{font-size:1.125rem;font-weight:700;margin:6px 0 0}
+.nav-item.ck-nav,.tabs .ck-nav{font-weight:700}
+.nav-item.ck-nav span:first-child::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:7px;vertical-align:1px}
 @media print{
   :root{--bg:#fff;--side:#fff;--surface2:#f1f2f3;--hover:#fff;--line:#b9bec4;--line2:#8d949b;--fg:#000;--muted:#444;--ink:#000;--ink-fg:#fff;--accent:#000;--warn:#7a4f00;--bad:#a01010;--good:#0c5c2f;--selected:#fff;--neutral:#777;color-scheme:light}
   html,body{background:#fff}
@@ -1078,18 +1097,18 @@ function renderTabs(){
   const ready=mode.loadState==="ready";
   const open=ready?state.jobs.filter(jobShort).length:0,bad=ready&&mode.canEdit?CTX.bad.size:0;
   const inRoom=ui.view==="room"&&ROOMS.some(r=>r.k===ui.room);
-  const cur=inRoom?"room":["board","jobs","todo","people","notes","agenda"].includes(ui.view)?ui.view:"overview";
+  const cur=inRoom?"room":["board","jobs","todo","people","notes","agenda","checklist"].includes(ui.view)?ui.view:"overview";
   const todoN=ready?state.todos.filter(x=>!x.done).length:0,todoLate=ready&&state.todos.some(todoOverdue);
   const count=(n,cls)=>n?'<span class="counter'+(cls?" "+cls:"")+'">'+n+"</span>":"";
-  const items=[["overview","總覽",""],["board","現場總表",""],["jobs","工作",count(open)],["todo","待辦",count(todoN,todoLate?"bad":"")],["people","人員",count(bad,"bad")],["notes","備註",""],["agenda","官方議程",""]];
-  $("sideNav").innerHTML=items.map(([v,l,c])=>'<button type="button" class="nav-item'+(cur===v?" on":"")+'"'+(cur===v?' aria-current="page"':"")+' data-tab="'+v+'"><span>'+l+"</span>"+c+"</button>").join("");
+  const items=[["overview","總覽",""],["board","現場總表",""],["jobs","工作",count(open)],["todo","待辦",count(todoN,todoLate?"bad":"")],["people","人員",count(bad,"bad")],["checklist","注意事項",""],["notes","備註",""],["agenda","官方議程",""]];
+  $("sideNav").innerHTML=items.map(([v,l,c])=>'<button type="button" class="nav-item'+(v==="checklist"?" ck-nav":"")+(cur===v?" on":"")+'"'+(cur===v?' aria-current="page"':"")+' data-tab="'+v+'"><span>'+l+"</span>"+c+"</button>").join("");
   $("sideAreas").innerHTML=ROOMS.map(r=>{
     const p=areaProgress(r.k),gap=ready?p.need-p.done:0;
     return '<button type="button" class="nav-item'+(inRoom&&ui.room===r.k?" on":"")+'"'+(inRoom&&ui.room===r.k?' aria-current="page"':"")+' data-open-room="'+esc(r.k)+'"><span>'+esc(r.name)+"</span>"+(gap?'<span class="open-dot" title="有 '+gap+' 項未指派"></span>':"")+"</button>";
   }).join("");
   $("tabs").innerHTML=items.map(([v,l,c])=>'<button type="button" class="'+(cur===v||(v==="overview"&&cur==="room")?"on":"")+'"'+(cur===v?' aria-current="page"':"")+' data-tab="'+v+'">'+l+(c?" "+c:"")+"</button>").join("");
-  document.title=(inRoom?roomOf(ui.room).name:({overview:"總覽",board:"現場總表",jobs:"工作",todo:"待辦",people:"人員",notes:"備註",agenda:"官方議程"}[cur]))+" · TAAI 2026 派工表";
-  const label={overview:"總覽",board:"現場總表",jobs:"工作",todo:"待辦",people:"人員",notes:"備註",agenda:"官方議程"}[cur];
+  document.title=(inRoom?roomOf(ui.room).name:({overview:"總覽",board:"現場總表",jobs:"工作",todo:"待辦",people:"人員",notes:"備註",agenda:"官方議程",checklist:"注意事項"}[cur]))+" · TAAI 2026 派工表";
+  const label={overview:"總覽",board:"現場總表",jobs:"工作",todo:"待辦",people:"人員",notes:"備註",agenda:"官方議程",checklist:"注意事項"}[cur];
   $("crumb").innerHTML='<span class="c-root">TAAI 2026</span>'
     +(inRoom?'<span class="c-mid"><button type="button" data-tab="overview">總覽</button></span><span class="c-mid">/</span><b>'+esc(roomOf(ui.room).name)+"</b>":'<span class="c-mid"><b>'+label+"</b></span>");
 }
@@ -1415,6 +1434,44 @@ function noteItemsHtml(list){
     +(n.at?'<small class="note-at">'+esc(fmtTime(n.at))+" 更新</small>":"")
     +"</li>").join("")+"</ol>";
 }
+// 各時段工作注意事項（來源：TAAI各時段工作注意事項，目前只有第 1 天）。寫在程式裡，不是資料檔，改內容請改這裡
+const CHECKLIST=[
+  {day:"d1",item:"動線",rooms:[],points:["各樓層指示牌"]},
+  {day:"d1",item:"接駁車",rooms:["bus"],points:["司機電話、遊覽車停靠站、指示牌、乘客名單"]},
+  {day:"d1",item:"住宿",rooms:[],points:["住宿者先於櫃檯寄放行李，15點辦理入住"]},
+  {day:"d1",item:"報到桌",rooms:["reg"],points:["桌牌、簽到表、文具、名牌","資料袋：筆、筆記本、小北熊、文宣","午餐券、晚宴券、午宴券"],notes:["台達電位置要靠近插座","裝印表機"]},
+  {day:"d1",item:"會議室內設備",rooms:["A","B","C","D"],points:["投影機、筆電、簡報筆、麥克風*2~4、電池、無線網路、響鈴、熱麥茶"]},
+  {day:"d1",item:"海報區設備",rooms:["P"],points:["換場更換IP、DP 編號、釘槍、筆電、響鈴","11/20單排看板、11/21雙排看板"]},
+  {day:"d1",item:"開幕典禮",rooms:["main"],points:["司儀、流程稿、音控、拍照、開幕投影片、致詞貴賓、遞麥克風的人、講台盆花","桌牌位置"]},
+  {day:"d1",item:"茶敘",rooms:["all"],points:["確認品項、熱咖啡及紅茶","素食及特殊餐食、垃圾回收"]},
+  {day:"d1",item:"主題演講 I",rooms:["main"],points:["google連線、音控、拍照、領款收據"],notes:["會另外給1條網路線"]},
+  {day:"d1",item:"各場次負責人員",rooms:["A","B","C","D","P"],points:["會議室A、B及海報區有評分表：評分+勾選1位「推薦」名單，交給惠晏。","各場次都有領款收據：資料填寫完整，由學會統一匯款，交給助教。","提醒主持人：論文發表時間10分鐘，8分鐘報告+2分鐘QA；按鈴：7分鐘一次 8分鐘兩次，QA 2分鐘按兩次。","海報發表時間一個人三分鐘。"],notes:["依議程順序發表。","有申請遠距發表的論文編號?","換場時要更換桌牌","協助發表者放投影片","拍照。"]},
+  {day:"d1",item:"午餐",rooms:["all"],points:["葷：200個，素：10個"],notes:["12:00或14:20飯店工作人員會先幫忙搬4張沙發椅放旁邊，國際座談場次使用"]},
+  {day:"d1",item:"主題演講 II",rooms:["main"],points:["麥克風、桌牌、音控、拍照、領款收據","演講者感謝狀、櫻花對杯"]},
+  {day:"d1",item:"國際座談",rooms:["main"],points:["舞台上需要4張沙發","主持人領款收據、麥克風、桌牌、音控、拍照、領款收據"]},
+  {day:"d1",item:"晚宴",rooms:["main"],points:["投影片、流程(頒獎順序)、司儀稿、論文獎得獎名單、贊助商感謝狀及獎牌、感謝狀名單、音控、拍照"]}
+];
+function ckPointsHtml(c){
+  return '<ul class="ck-points">'+c.points.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>"
+    +(c.notes&&c.notes.length?'<p class="ck-note"><b>備註</b>'+c.notes.map(esc).join("　／　")+"</p>":"");
+}
+function ckWhere(c){return c.rooms.length?c.rooms.map(k=>'<a href="#room-'+esc(k)+'">'+esc(roomOf(k).name)+"</a>").join("、"):"全體"}
+// 區域頁最上方的注意事項提示框
+function roomChecklistHtml(k){
+  const list=CHECKLIST.filter(c=>c.rooms.includes(k));
+  if(!list.length)return "";
+  return '<section class="ck-box" aria-labelledby="ck-h"><h2 id="ck-h">11/20 注意事項<a href="#checklist">看全部</a></h2>'
+    +list.map(c=>'<div class="ck-item"><h3>'+esc(c.item)+"</h3>"+ckPointsHtml(c)+"</div>").join("")+"</section>";
+}
+function renderChecklist(){
+  let h=banners()+'<div class="page-head"><div><h1 tabindex="-1">注意事項</h1><p class="page-sub">各時段、各地點要準備與確認的事</p></div></div><div class="ck-page">';
+  for(const d of DAYS){
+    const list=CHECKLIST.filter(c=>c.day===d.k);
+    if(!list.length)continue;
+    h+='<h2 class="ck-day">'+esc(d.name)+"</h2>"+list.map(c=>'<section class="ck-card"><h3>'+esc(c.item)+'<span class="ck-where">'+ckWhere(c)+"</span></h3>"+ckPointsHtml(c)+"</section>").join("");
+  }
+  $("main").innerHTML=h+"</div>";
+}
 function renderNotes(){
   let h=banners()+'<div class="page-head"><h1 tabindex="-1">備註</h1></div>';
   if(mode.canEdit){
@@ -1512,6 +1569,7 @@ function renderRoomBody(){
     const has=names(state.leads[room.k]).length>0;
     h+='<dl class="props"><dt>負責人</dt><dd><div>'+chipsHtml("lead",room.k,"",room.name+" 負責人",leadNeed(room.k))+"</div>"+statusHtml("lead",room.k,state.leadStatus[room.k],has)+"</dd></dl>";
   }
+  h+=roomChecklistHtml(room.k);
   const rl="room:"+room.k,rnotes=noteArr(rl);
   if(mode.canEdit)h+='<section class="room-notes" aria-labelledby="rn-h"><div class="note-head"><h2 id="rn-h">備註</h2>'+(rnotes.length?'<span class="counter">'+rnotes.length+"</span>":"")+(mode.hosted?'<span class="tip">發布後所有人都看得到</span>':"")+"</div>"+noteItemsHtml(rl)+noteAddHtml(rl,"新增這個區域的備註，按 Enter；例如設備、動線、注意事項")+"</section>";
   else if(rnotes.length)h+='<section class="room-notes" aria-labelledby="rn-h"><div class="note-head"><h2 id="rn-h">備註</h2></div>'+noteViewHtml(rnotes,room.name+" 備註")+"</section>";
@@ -1825,6 +1883,7 @@ function render(){
     else if(ui.view==="people")renderPeople();
     else if(ui.view==="jobs")renderJobs();
     else if(ui.view==="notes")renderNotes();
+    else if(ui.view==="checklist")renderChecklist();
     else if(ui.view==="agenda")renderAgenda();
     else if(ui.view==="room"&&ROOMS.some(r=>r.k===ui.room))renderRoom();
     else renderOverview();
@@ -1854,7 +1913,7 @@ function parseHash(){
     const at=h.slice(7);ui.view="agenda";
     if(at){ui.agendaAt=/^[a-z0-9-]{1,40}$/.test(at)?at:"";ui.agendaJump=true}
   }
-  else ui.view=["board","jobs","todo","people","notes"].includes(h)?h:"overview";
+  else ui.view=["board","jobs","todo","people","notes","checklist"].includes(h)?h:"overview";
 }
 function go(view,room){
   const h=view==="room"?"room-"+room:view==="agenda"&&room?"agenda-"+room:view;
