@@ -145,7 +145,7 @@ main h1:focus{outline:0}
 .c-time small{display:block;font-size:.75rem}
 .c-title{min-width:150px}
 .c-title small{display:block;color:var(--muted);font-size:.7812rem;line-height:1.4;overflow-wrap:anywhere}
-.c-title small.note{color:var(--fg)}
+.c-title small.note{color:var(--fg);white-space:pre-line}
 .c-title b,.t-strong{font-weight:500}
 .c-meta{color:var(--muted);font-size:.8125rem;min-width:6.5em}
 .c-people{min-width:190px;width:38%}
@@ -1120,6 +1120,7 @@ function banners(){
   if(sh)h+='<div class="banner info" role="status"><span>接駁車班次有更新：'+sh.n+' 個班次改成預約系統的班次號碼'+(sh.split?'；其中 '+sh.split+' 個是 80 座、要分成兩台車，各需一位隨車人員':'')+'。</span><button type="button" data-shuttle-fix="1">套用</button><button type="button" class="ghost" data-shuttle-fix-skip="1">略過</button></div>';
   const dn=dinnerPending();
   if(dn)h+='<div class="banner info" role="status"><span>歡迎晚宴（11/20 18:00）可以加進來：'+[dn.n?'人員分配，新增 '+dn.n+' 項工作（場控、司儀、報到桌收餐券與帶位、隨機）'+(dn.lack?'，還缺 '+dn.lack+' 人（英文、中文各有待補）':''):'',dn.note?'場次備註寫入桌次（共 30 桌）':''].filter(Boolean).join('；')+'。</span><button type="button" data-dinner-fix="1">套用</button><button type="button" class="ghost" data-dinner-fix-skip="1">略過</button></div>';
+  if(tutor2Pending())h+='<div class="banner info" role="status"><span>11/21 Agentic AI 專題教學 2（大會廳）可以加上林豪鏘教授的現場需求（8 項：試播 PPT、喇叭、簡報筆、2 瓶水、冷氣、拍照 10 張等），寫進場次備註；簡報檔連結不會放進去。</span><button type="button" data-tutor2-fix="1">套用</button><button type="button" class="ghost" data-tutor2-fix-skip="1">略過</button></div>';
   const a3=agenda3Pending();
   if(a3)h+='<div class="banner info" role="status"><span>官網議程有更新：'+a3.n+' 個場次可以補上場地或講者（午宴改到 B1 板根廳、歡迎晚宴在 1F 麗池廳、茶敘與第一天午餐在 5F 麗山廳展示區，以及三場專題教學的講者）。</span><button type="button" data-agenda3-fix="1">套用</button><button type="button" class="ghost" data-agenda3-fix-skip="1">略過</button></div>';
   const fix=mode.pendingLocal?null:agendaFix2Pending();
@@ -2144,6 +2145,8 @@ $("main").addEventListener("click",e=>{
   if(d.agendaFix){doAgendaFix2();return}
   if(d.shuttleFix){doShuttleFix();return}
   if(d.shuttleFixSkip){try{localStorage.setItem(SHUTTLE_KEY+"-skip","1")}catch(e){}refresh();return}
+  if(d.tutor2Fix){doTutor2();return}
+  if(d.tutor2FixSkip){try{localStorage.setItem(TUTOR2_KEY+"-skip","1")}catch(e){}refresh();return}
   if(d.agenda3Fix){doAgenda3();return}
   if(d.agenda3FixSkip){try{localStorage.setItem(AGENDA3_KEY+"-skip","1")}catch(e){}refresh();return}
   if(d.dinnerFix){doDinnerFix();return}
@@ -2963,6 +2966,29 @@ function doAgenda3(){
   for(const [x,sub] of rows)x.sub=sub;
   save();refresh();
   toast("已依官網議程補上 "+rows.length+" 個場次的場地或講者。按「發布」後大家才看得到。",{undo:()=>{try{localStorage.removeItem(AGENDA3_KEY)}catch(e){}undoFrom(before).undo()}});
+  return true;
+}
+// 2026-11-18 Agentic AI 專題教學 2（11/21 13:00，大會廳）講者林豪鏘教授的現場需求，寫進場次備註。
+// 簡報檔連結不放進來（派工表是公開的，講者要求檔案不外流），請統籌私下交給負責的工作人員。場次備註還是空的才寫入。
+const TUTOR2_KEY=KEY+"-tutorial2-1118";
+const TUTOR2_NOTE="講者林豪鏘教授（鏘鏘）的需求，由工作人員與鏘鏘對口：\n1. 最新版演講 PPT 檔案很大，請提早安裝並試播，尤其測試裡面的影片和聲音（連結請向統籌索取，這裡不放）。\n2. 現場準備播放喇叭。\n3. 準備簡報筆。\n4. 準備 2 瓶常見大小的瓶裝水。\n5. 會場冷氣開冷一點。\n6. 當天幫忙拍照 10 張（講者要貼臉書）。\n7. 講者幾乎每天更新投影片，請盡量晚一點再下載 PPT。\n8. 投影片檔案請勿外流，包括演講學員。";
+function tutor2Session(){
+  const x=state.sessions.find(y=>y.id==="s35"&&y.room==="main"&&y.day==="d2"&&y.start==="13:00"&&y.end==="14:20"&&y.title==="Agentic AI 專題教學 2");
+  return x&&!String(x.note||"").trim()?x:null;
+}
+function tutor2Pending(){
+  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal)return false;
+  try{if(localStorage.getItem(TUTOR2_KEY)||localStorage.getItem(TUTOR2_KEY+"-skip"))return false}catch(e){}
+  return !!tutor2Session();
+}
+function doTutor2(){
+  const x=tutor2Session();
+  if(!x)return false;
+  try{localStorage.setItem(TUTOR2_KEY,"1")}catch(e){}
+  const before=JSON.stringify(state);
+  x.note=TUTOR2_NOTE;
+  save();refresh();
+  toast("已把林豪鏘教授的現場需求寫進 11/21 Agentic AI 專題教學 2 的備註。按「發布」後大家才看得到。",{undo:()=>{try{localStorage.removeItem(TUTOR2_KEY)}catch(e){}undoFrom(before).undo()}});
   return true;
 }
 // 2026-11-17 歡迎晚宴（11/20 18:00）人員分配：場控、司儀、報到桌（收餐券、帶位）、隨機。只新增工作，已有同名工作就略過。
