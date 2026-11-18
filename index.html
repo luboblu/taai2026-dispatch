@@ -1120,6 +1120,8 @@ function banners(){
   if(sh)h+='<div class="banner info" role="status"><span>接駁車班次有更新：'+sh.n+' 個班次改成預約系統的班次號碼'+(sh.split?'；其中 '+sh.split+' 個是 80 座、要分成兩台車，各需一位隨車人員':'')+'。</span><button type="button" data-shuttle-fix="1">套用</button><button type="button" class="ghost" data-shuttle-fix-skip="1">略過</button></div>';
   const dn=dinnerPending();
   if(dn)h+='<div class="banner info" role="status"><span>歡迎晚宴（11/20 18:00）可以加進來：'+[dn.n?'人員分配，新增 '+dn.n+' 項工作（場控、司儀、報到桌收餐券與帶位、隨機）'+(dn.lack?'，還缺 '+dn.lack+' 人（英文、中文各有待補）':''):'',dn.note?'場次備註寫入桌次（共 30 桌）':''].filter(Boolean).join('；')+'。</span><button type="button" data-dinner-fix="1">套用</button><button type="button" class="ghost" data-dinner-fix-skip="1">略過</button></div>';
+  const a3=agenda3Pending();
+  if(a3)h+='<div class="banner info" role="status"><span>官網議程有更新：'+a3.n+' 個場次可以補上場地或講者（午宴改到 B1 板根廳、歡迎晚宴在 1F 麗池廳、茶敘與第一天午餐在 5F 麗山廳展示區，以及三場專題教學的講者）。</span><button type="button" data-agenda3-fix="1">套用</button><button type="button" class="ghost" data-agenda3-fix-skip="1">略過</button></div>';
   const fix=mode.pendingLocal?null:agendaFix2Pending();
   if(fix)h+='<div class="banner info" role="status"><span>官網議程有更新：'+fix.change+' 個場次要改名稱或時間'+(fix.drop?"，"+fix.drop+" 個空場次要合併":"")+'（第 1 天會議室 D、大會廳專題教學；第 2 天大會廳與會議室 C 合併時段、午宴）。</span><button type="button" data-agenda-fix="1">套用</button><button type="button" class="ghost" data-agenda-fix-skip="1">略過</button></div>';
   if(mode.remoteNewer&&mode.canEdit)h+='<div class="banner info" role="status"><span>線上有較新的版本，發布時會請你確認。</span></div>';
@@ -2142,6 +2144,8 @@ $("main").addEventListener("click",e=>{
   if(d.agendaFix){doAgendaFix2();return}
   if(d.shuttleFix){doShuttleFix();return}
   if(d.shuttleFixSkip){try{localStorage.setItem(SHUTTLE_KEY+"-skip","1")}catch(e){}refresh();return}
+  if(d.agenda3Fix){doAgenda3();return}
+  if(d.agenda3FixSkip){try{localStorage.setItem(AGENDA3_KEY+"-skip","1")}catch(e){}refresh();return}
   if(d.dinnerFix){doDinnerFix();return}
   if(d.dinnerFixSkip){try{localStorage.setItem(DINNER_KEY+"-skip","1")}catch(e){}refresh();return}
   if(d.agendaFixSkip){try{localStorage.setItem(AGENDA_FIX2_KEY+"-skip","1")}catch(e){}refresh();return}
@@ -2921,6 +2925,44 @@ function doShuttleFix(){
   }
   save();refresh();
   toast("已依接駁車預約系統更新 "+rows.length+" 個班次"+(added?"，並把 80 座的班次分成兩台、新增 "+added+" 個第 2 台":"")+"。按「發布」後大家才看得到。",{undo:()=>{try{localStorage.removeItem(SHUTTLE_KEY)}catch(e){}undoFrom(before).undo()}});
+  return true;
+}
+// 2026-11-18 依官網議程補場地與講者：午宴改到 B1 板根廳、歡迎晚宴在 1F 麗池廳、茶敘與第一天午餐在 5F 麗山廳展示區，
+// 另補 AI CUP 與三場專題教學的副標。只改時間、名稱都相符、且補充說明還是舊值的場次；統籌改過的不動。
+const AGENDA3_KEY=KEY+"-agenda-1118";
+const T_FLOOR="5F 麗山廳展示區";
+const AGENDA3=[
+  ["s30","all","d2","12:00","13:00","午宴","1F 麗池廳","B1 板根廳"],
+  ["s11","main","d1","18:00","20:00","歡迎晚宴","公布論文獎","公布論文獎 · 1F 麗池廳"],
+  ["s1","all","d1","10:20","10:40","茶敘","",T_FLOOR],
+  ["s2","all","d1","12:00","13:00","午餐","",T_FLOOR],
+  ["s3","all","d1","14:20","14:40","茶敘","",T_FLOOR],
+  ["s29","all","d2","09:50","10:10","茶敘","",T_FLOOR],
+  ["s31","all","d2","14:20","14:40","茶敘","",T_FLOOR],
+  ["s18","C","d1","10:40","12:00","AI CUP 場次","","從人工智慧競賽到跨域創新與人才培育"],
+  ["s8","main","d1","14:40","16:00","Agentic AI 專題教學 1","","崔殷豪 · 昊智未來科技"],
+  ["s35","main","d2","13:00","14:20","Agentic AI 專題教學 2","","林豪鏘 教授 · 國立臺南大學"],
+  ["s36","main","d2","14:40","15:30","Physical AI 專題教學","","孫紹華 副教授 · 國立臺灣大學"]
+];
+// 舊的官網議程更新（會改名稱、午宴）還沒處理時先等它，否則名稱對不上，只會套用到一部分卻記成全部完成
+function agenda3Todo(){
+  if(agendaFix2Pending())return [];
+  return AGENDA3.map(r=>[state.sessions.find(x=>x.id===r[0]&&x.room===r[1]&&x.day===r[2]&&x.start===r[3]&&x.end===r[4]&&x.title===r[5]&&String(x.sub||"")===r[6]),r[7]]).filter(r=>r[0]);
+}
+function agenda3Pending(){
+  if(!mode.canEdit||mode.loadState!=="ready"||mode.pendingLocal)return null;
+  try{if(localStorage.getItem(AGENDA3_KEY)||localStorage.getItem(AGENDA3_KEY+"-skip"))return null}catch(e){}
+  const n=agenda3Todo().length;
+  return n?{n}:null;
+}
+function doAgenda3(){
+  const rows=agenda3Todo();
+  if(!rows.length)return false;
+  try{localStorage.setItem(AGENDA3_KEY,"1")}catch(e){}
+  const before=JSON.stringify(state);
+  for(const [x,sub] of rows)x.sub=sub;
+  save();refresh();
+  toast("已依官網議程補上 "+rows.length+" 個場次的場地或講者。按「發布」後大家才看得到。",{undo:()=>{try{localStorage.removeItem(AGENDA3_KEY)}catch(e){}undoFrom(before).undo()}});
   return true;
 }
 // 2026-11-17 歡迎晚宴（11/20 18:00）人員分配：場控、司儀、報到桌（收餐券、帶位）、隨機。只新增工作，已有同名工作就略過。
